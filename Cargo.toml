@@ -9,3 +9,4 @@ uuid = { version = "1", features = ["v4"] }
 clap = "3.0"
 wild = "2.2.1"
 duct = "0.13.7"
+tokio = {"version"="1.36.0", features=["rt-multi-thread", "macros"]}

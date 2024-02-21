@@ -7,7 +7,8 @@ use crate::runner::run_command;
 use crate::storage::{FileStorage, Storage};
 use uuid::Uuid;
 
-fn main() -> std::io::Result<()> {
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
     let matches = build_cli();
 
     let command_args = matches.values_of("command").unwrap();
