@@ -1,12 +1,14 @@
+use async_trait::async_trait;
 use flate2::write::GzEncoder;
 use flate2::Compression;
 use std::fs::File;
 use std::io::{self, Write};
 use std::sync::{Arc, Mutex};
 
+#[async_trait]
 pub trait Storage {
-    fn save(&self, data: &[String]);
-    fn finish(&self) -> io::Result<()>;
+    async fn save(&self, data: &[String]);
+    async fn finish(&self) -> io::Result<()>;
 }
 
 pub struct FileStorage {
@@ -23,21 +25,26 @@ impl FileStorage {
     }
 }
 
+#[async_trait]
 impl Storage for FileStorage {
-    fn save(&self, data: &[String]) {
-        let mut encoder_guard = self.encoder.lock().unwrap();
-        if let Some(ref mut encoder) = *encoder_guard {
-            data.iter().for_each(|line| {
+    async fn save(&self, data: &[String]) {
+        let mut encoder = self.encoder.lock().unwrap();
+        if let Some(ref mut encoder) = *encoder {
+            for line in data {
                 writeln!(encoder, "{}", line).unwrap();
-            });
+            }
         }
     }
 
-    fn finish(&self) -> io::Result<()> {
-        let mut encoder_guard = self.encoder.lock().unwrap();
-        if let Some(encoder) = encoder_guard.take() {
-            encoder.finish()?;
+    async fn finish(&self) -> io::Result<()> {
+        let encoder = self.encoder.lock().unwrap().take();
+        if let Some(encoder) = encoder {
+            tokio::task::spawn_blocking(move || encoder.finish())
+                .await?
+                .map(|_| ())
+                .map_err(Into::into)
+        } else {
+            Ok(())
         }
-        Ok(())
     }
 }

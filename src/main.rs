@@ -25,8 +25,8 @@ async fn main() -> std::io::Result<()> {
     } else {
         let filename = format!("{}_{}.out.gz", label, run_uuid);
         let file_storage = FileStorage::new(&filename);
-        file_storage.save(&output_data);
-        file_storage.finish().expect("Closing GZip failed");
+        file_storage.save(&output_data).await;
+        file_storage.finish().await.expect("Closing GZip failed");
     }
 
     Ok(())
