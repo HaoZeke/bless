@@ -1,13 +1,12 @@
-use std::io::{self, BufRead, BufReader, Write};
 use clap::{App, Arg};
 use flate2::write::GzEncoder;
 use flate2::Compression;
-use std::process::{Command, Stdio};
+use std::io::{BufRead, BufReader, Write};
+use duct::cmd;
 use std::sync::{Arc, Mutex};
-use std::thread;
 use uuid::Uuid;
 
-fn main() -> io::Result<()> {
+fn main() -> std::io::Result<()> {
     let matches = App::new("bless")
         .version("0.0.1")
         .author("Rohit Goswami <rgoswami@ieee.org>")
@@ -32,46 +31,24 @@ fn main() -> io::Result<()> {
         let encoder = GzEncoder::new(out_file, Compression::default());
         let encoder = Arc::new(Mutex::new(encoder));
 
-        let mut child = Command::new(command)
-            .args(args)
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn()?;
+        // Use duct to create a subprocess, merging stderr into stdout
+        let reader = cmd(*command, args).stderr_to_stdout().reader()?;
+        let reader = BufReader::new(reader);
 
-        let stdout = child.stdout.take().unwrap();
-        let stderr = child.stderr.take().unwrap();
-
-        let encoder_clone = encoder.clone();
-        let handle_out = thread::spawn(move || {
-            let reader = BufReader::new(stdout);
-            for line in reader.lines() {
-                let line = line.unwrap();
-                let mut encoder = encoder_clone.lock().unwrap();
-                writeln!(encoder, "{}", line).unwrap();
-                println!("{}", line);
-            }
+        // Process output in real-time
+        reader.lines().for_each(|line| {
+            let line = line.unwrap();
+            println!("{}", line); // Print to stdout
+            let mut encoder = encoder.lock().unwrap();
+            writeln!(encoder, "{}", line).unwrap(); // Write to gzip file
         });
 
-        let encoder_clone = encoder.clone();
-        let handle_err = thread::spawn(move || {
-            let reader = BufReader::new(stderr);
-            for line in reader.lines() {
-                let line = line.unwrap();
-                let mut encoder = encoder_clone.lock().unwrap();
-                writeln!(encoder, "{}", line).unwrap();
-                eprintln!("{}", line);
-            }
-        });
-
-        handle_out.join().unwrap();
-        handle_err.join().unwrap();
-
+        // Finish encoding
         let encoder = Arc::try_unwrap(encoder)
             .expect("Arc::try_unwrap failed")
             .into_inner()
             .unwrap();
-        encoder.finish().unwrap();
-        child.wait()?; // Wait for the process to exit
+        encoder.finish()?;
     }
 
     Ok(())
