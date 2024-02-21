@@ -9,3 +9,4 @@ edition = "2021"
 flate2 = "1.0"
 uuid = { version = "1", features = ["v4"] }
 clap = "3.0"
+wild = "2.2.1"

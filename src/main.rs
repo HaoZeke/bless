@@ -19,7 +19,7 @@ fn main() -> io::Result<()> {
                 .multiple(true)
                 .last(true),
         )
-        .get_matches();
+        .get_matches_from(wild::args());
 
     if let Some(command_args) = matches.values_of("command") {
         let command_vec: Vec<&str> = command_args.collect();
