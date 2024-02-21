@@ -1,0 +1,22 @@
+#+OPTIONS: num:nil
+* About
+A simple command line wrapper for repeated runs, with metadata and lightweight
+tracking.
+** Why?
+During development, a full interface to HPC oriented workflow engines like
+AiiDA, Fireworks, Jobflow, and the like is typically too heavy, and more
+importantly, the API is often not stable. That being said, this could also be
+used in conjunction with ~pychum~ and workflow runners like Snakemake to store
+* Development
+** Documentation
+*** Readme
+The ~readme~ can be constructed via:
+#+begin_src bash
+./scripts/org_to_md.sh readme_src.org readme.md
+#+end_src
+metadata more generically.
+* License
+MIT. However, this is an academic resource, so *please cite* as much as possible
+via:
+- The Zenodo DOI for general use.
+- TBD a publication
