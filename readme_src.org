@@ -7,6 +7,11 @@ During development, a full interface to HPC oriented workflow engines like
 AiiDA, Fireworks, Jobflow, and the like is typically too heavy, and more
 importantly, the API is often not stable. That being said, this could also be
 used in conjunction with ~pychum~ and workflow runners like Snakemake to store
+*** Component Rationale
+- Duct :: For [[https://github.com/oconnor663/duct.py/blob/master/gotchas.md][the gotchas]]
+- Wild :: For cross-platform globs
+- Flate2 :: For compression
+- UUID ::  For the unique IDs
 * Development
 ** Documentation
 *** Readme
