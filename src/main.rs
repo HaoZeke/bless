@@ -1,12 +1,12 @@
 mod cli;
 mod db;
 mod runner;
-mod storage;
 
 use crate::cli::build_cli;
 use crate::db::{list_databases, setup_mongodb};
 use crate::runner::run_command;
-use crate::storage::{FileStorage, MongoDBStorage, Storage};
+use bless::storage::Storage;
+use bless::storage_backends::{file::FileStorage, mongodb::MongoDBStorage};
 use uuid::Uuid;
 
 #[tokio::main]
@@ -28,11 +28,11 @@ async fn main() -> std::io::Result<()> {
         let mongodb_storage = MongoDBStorage::new(&client, "local", "commands")
             .await
             .expect("Failed to create MongoDB storage");
-        mongodb_storage.save(&output_data).await;
+        mongodb_storage.save(label, &run_uuid, &output_data).await?;
     } else {
         let filename = format!("{}_{}.out.gz", label, run_uuid);
         let file_storage = FileStorage::new(&filename);
-        file_storage.save(&output_data).await;
+        file_storage.save(label, &run_uuid, &output_data).await?;
         file_storage.finish().await.expect("Closing GZip failed");
     }
 
