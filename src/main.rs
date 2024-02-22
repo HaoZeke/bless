@@ -6,7 +6,7 @@ mod storage;
 use crate::cli::build_cli;
 use crate::db::{list_databases, setup_mongodb};
 use crate::runner::run_command;
-use crate::storage::{FileStorage, Storage};
+use crate::storage::{FileStorage, MongoDBStorage, Storage};
 use uuid::Uuid;
 
 #[tokio::main]
@@ -25,6 +25,10 @@ async fn main() -> std::io::Result<()> {
     if use_mongodb {
         let client = setup_mongodb().await?;
         list_databases(&client).await?;
+        let mongodb_storage = MongoDBStorage::new(&client, "local", "commands")
+            .await
+            .expect("Failed to create MongoDB storage");
+        mongodb_storage.save(&output_data).await;
     } else {
         let filename = format!("{}_{}.out.gz", label, run_uuid);
         let file_storage = FileStorage::new(&filename);

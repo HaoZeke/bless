@@ -1,6 +1,7 @@
 use async_trait::async_trait;
 use flate2::write::GzEncoder;
 use flate2::Compression;
+use mongodb::{bson::doc, bson::Document, Client, Collection};
 use std::fs::File;
 use std::io::{self, Write};
 use std::sync::{Arc, Mutex};
@@ -46,5 +47,47 @@ impl Storage for FileStorage {
         } else {
             Ok(())
         }
+    }
+}
+
+pub struct MongoDBStorage {
+    collection: Collection<Document>,
+}
+
+impl MongoDBStorage {
+    pub async fn new(client: &Client, db_name: &str, collection_name: &str) -> io::Result<Self> {
+        let db = client.database(db_name);
+        let collection: Collection<Document> = db.collection(collection_name);
+        Ok(Self { collection })
+    }
+}
+
+#[async_trait]
+impl Storage for MongoDBStorage {
+    async fn save(&self, data: &[String]) {
+        let output = data.join("\n");
+        let doc = doc! {
+            "label": "your_label_here",
+            "run_uuid": "your_run_uuid_here",
+            "cmd_output": output,
+        };
+
+        match self.collection.insert_one(doc, None).await {
+            Ok(insert_result) => {
+                // Successfully inserted document, print the new document ID
+                if let bson::Bson::ObjectId(oid) = insert_result.inserted_id {
+                    println!("New document ID: {}", oid);
+                } else {
+                    eprintln!("Failed to retrieve document ID");
+                }
+            }
+            Err(e) => {
+                // Error occurred while inserting document
+                eprintln!("Error saving to MongoDB: {}", e);
+            }
+        }
+    }
+    async fn finish(&self) -> io::Result<()> {
+        Ok(())
     }
 }
