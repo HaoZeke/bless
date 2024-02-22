@@ -1,4 +1,6 @@
-#+OPTIONS: num:nil
+#+OPTIONS: num:nil toc:nil
+file:branding/logo/bless_logo.png
+#+TOC: headlines 2
 * About
 A simple command line wrapper for repeated runs, with metadata and lightweight
 tracking.
@@ -7,12 +9,21 @@ During development, a full interface to HPC oriented workflow engines like
 AiiDA, Fireworks, Jobflow, and the like is typically too heavy, and more
 importantly, the API is often not stable. That being said, this could also be
 used in conjunction with ~pychum~ and workflow runners like Snakemake to store
-*** Component Rationale
+* Usage
+#+begin_src bash
+cargo build --release
+MONGODB_URI="mongodb://localhost:27017/" ./target/release/bless --use-mongodb -- echo "bye"
+# Then view it in mongosh
+# or
+./target/release/bless -- echo "bye"
+zcat default_label*.gz
+#+end_src
+* Development
+** Component Rationale
 - Duct :: For [[https://github.com/oconnor663/duct.py/blob/master/gotchas.md][the gotchas]]
 - Wild :: For cross-platform globs
 - Flate2 :: For compression
 - UUID ::  For the unique IDs
-* Development
 ** Local MongoDB
 Assuming ~pixi~ is used to get an instance of ~mongod~.
 #+begin_src bash
