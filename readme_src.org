@@ -13,6 +13,18 @@ used in conjunction with ~pychum~ and workflow runners like Snakemake to store
 - Flate2 :: For compression
 - UUID ::  For the unique IDs
 * Development
+** Local MongoDB
+Assuming ~pixi~ is used to get an instance of ~mongod~.
+#+begin_src bash
+pixi run mongod --dbpath $(pwd)/data/database
+MONGODB_URI="mongodb://localhost:27017/" ./target/release/bless --use-mongodb -- $CMD_TO_RUN
+#+end_src
+I use ~npx mongosh~ for validating commands.
+#+begin_src bash
+npx mongsh
+use local
+db.commands.find()
+#+end_src
 ** Documentation
 *** Readme
 The ~readme~ can be constructed via:
