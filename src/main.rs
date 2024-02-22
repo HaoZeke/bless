@@ -1,17 +1,13 @@
 mod cli;
+mod db;
 mod runner;
 mod storage;
 
 use crate::cli::build_cli;
+use crate::db::{list_databases, setup_mongodb};
 use crate::runner::run_command;
 use crate::storage::{FileStorage, Storage};
 use uuid::Uuid;
-
-use mongodb::{
-    options::{ClientOptions, ResolverConfig},
-    Client,
-};
-use std::{env, io};
 
 #[tokio::main]
 async fn main() -> std::io::Result<()> {
@@ -27,27 +23,8 @@ async fn main() -> std::io::Result<()> {
     let output_data = run_command(command, args);
 
     if use_mongodb {
-        let client_uri =
-            env::var("MONGODB_URI").expect("You must set the MONGODB_URI environment var!");
-
-        let options_result =
-            ClientOptions::parse_with_resolver_config(&client_uri, ResolverConfig::cloudflare())
-                .await;
-        let options =
-            options_result.map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
-
-        let client_result = Client::with_options(options);
-        let client =
-            client_result.map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
-
-        println!("Databases:");
-        let db_names = client
-            .list_database_names(None, None)
-            .await
-            .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
-        for name in db_names {
-            println!("- {}", name);
-        }
+        let client = setup_mongodb().await?;
+        list_databases(&client).await?;
     } else {
         let filename = format!("{}_{}.out.gz", label, run_uuid);
         let file_storage = FileStorage::new(&filename);
