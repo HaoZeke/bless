@@ -1,43 +1,60 @@
 use std::io::{self, BufRead, BufReader};
 use std::process::{Command, Stdio};
+use tokio::task;
 
-pub fn run_command(command: &str, args: &[&str]) -> Result<Vec<String>, io::Error> {
-    let child = Command::new(command)
-        .args(args)
-        .stderr(Stdio::piped()) // Redirect stderr to stdout
-        .stdout(Stdio::piped()) // Ensure stdout is captured
-        .spawn(); // Use spawn to start the command without waiting for it to finish
+pub async fn run_command(command: &str, args: &[&str]) -> Result<Vec<String>, io::Error> {
+    // Clone `command` and `args` to satisfy 'static lifetime requirements.
+    let command = command.to_string();
+    let args = args
+        .iter()
+        .map(|&arg| arg.to_string())
+        .collect::<Vec<String>>();
 
-    // Handle potential error when spawning the command
-    let mut child = match child {
-        Ok(child) => child,
-        Err(e) => return Err(io::Error::new(io::ErrorKind::Other, e.to_string())),
-    };
+    task::spawn_blocking(move || {
+        let process = Command::new(&command)
+            .args(&args)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn();
 
-    // Prepare to read from the command's stdout
-    let stdout = child
-        .stdout
-        .take()
-        .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "Failed to capture stdout"))?;
-    let reader = BufReader::new(stdout);
+        match process {
+            Ok(mut child) => {
+                let mut output_data = Vec::new();
 
-    let mut output_data = Vec::new();
+                // Merge stdout and stderr
+                if let Some(ref mut stdout) = child.stdout {
+                    let reader = BufReader::new(stdout);
+                    reader.lines().for_each(|line| {
+                        if let Ok(line) = line {
+                            println!("{}", line); // Emulate 'tee' behavior by printing to stdout
+                            output_data.push(line);
+                        }
+                    });
+                }
 
-    for line in reader.lines() {
-        let line = line?;
-        println!("{}", line);
-        output_data.push(line);
-    }
+                if let Some(ref mut stderr) = child.stderr {
+                    let reader = BufReader::new(stderr);
+                    reader.lines().for_each(|line| {
+                        if let Ok(line) = line {
+                            eprintln!("{}", line); // Print stderr lines to stderr
+                            output_data.push(line);
+                        }
+                    });
+                }
 
-    // Wait for the command to finish and check its exit status
-    let status = child.wait()?;
-    if !status.success() {
-        let error_message = format!(
-            "Command failed with exit status: {}",
-            status.code().unwrap_or(-1)
-        );
-        output_data.push(error_message);
-    }
+                // Wait for the process to exit and check for errors
+                let status = child.wait()?;
+                if !status.success() {
+                    return Err(io::Error::new(
+                        io::ErrorKind::Other,
+                        format!("Command exited with status: {}", status),
+                    ));
+                }
 
-    Ok(output_data)
+                Ok(output_data)
+            }
+            Err(e) => Err(io::Error::new(io::ErrorKind::Other, e.to_string())),
+        }
+    })
+    .await?
 }
