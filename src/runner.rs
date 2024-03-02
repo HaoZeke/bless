@@ -1,16 +1,60 @@
-use duct::cmd;
-use std::io::{BufRead, BufReader};
+use std::io::{self, BufRead, BufReader};
+use std::process::{Command, Stdio};
+use tokio::task;
 
-pub fn run_command(command: &str, args: &[&str]) -> Vec<String> {
-    let reader = cmd(command, args).stderr_to_stdout().reader().unwrap();
-    let reader = BufReader::new(reader);
+pub async fn run_command(command: &str, args: &[&str]) -> Result<Vec<String>, io::Error> {
+    // Clone `command` and `args` to satisfy 'static lifetime requirements.
+    let command = command.to_string();
+    let args = args
+        .iter()
+        .map(|&arg| arg.to_string())
+        .collect::<Vec<String>>();
 
-    let mut output_data = Vec::new();
-    reader.lines().for_each(|line| {
-        let line = line.unwrap();
-        println!("{}", line); // Print to stdout
-        output_data.push(line);
-    });
+    task::spawn_blocking(move || {
+        let process = Command::new(&command)
+            .args(&args)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn();
 
-    output_data
+        match process {
+            Ok(mut child) => {
+                let mut output_data = Vec::new();
+
+                // Merge stdout and stderr
+                if let Some(ref mut stdout) = child.stdout {
+                    let reader = BufReader::new(stdout);
+                    reader.lines().for_each(|line| {
+                        if let Ok(line) = line {
+                            println!("{}", line); // Emulate 'tee' behavior by printing to stdout
+                            output_data.push(line);
+                        }
+                    });
+                }
+
+                if let Some(ref mut stderr) = child.stderr {
+                    let reader = BufReader::new(stderr);
+                    reader.lines().for_each(|line| {
+                        if let Ok(line) = line {
+                            eprintln!("{}", line); // Print stderr lines to stderr
+                            output_data.push(line);
+                        }
+                    });
+                }
+
+                // Wait for the process to exit and check for errors
+                let status = child.wait()?;
+                if !status.success() {
+                    return Err(io::Error::new(
+                        io::ErrorKind::Other,
+                        format!("Command exited with status: {}", status),
+                    ));
+                }
+
+                Ok(output_data)
+            }
+            Err(e) => Err(io::Error::new(io::ErrorKind::Other, e.to_string())),
+        }
+    })
+    .await?
 }
