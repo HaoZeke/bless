@@ -19,7 +19,7 @@ async fn main() -> std::io::Result<()> {
     let label = matches.value_of("label").unwrap_or("default_label");
     let use_mongodb = matches.is_present("use_mongodb");
     let run_uuid = Uuid::new_v4().to_string();
-    let output_data_result = run_command(command, args);
+    let output_data_result = run_command(command, args).await;
     let output_data = match output_data_result {
         Ok(data) => data,
         Err(e) => {
