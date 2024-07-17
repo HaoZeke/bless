@@ -9,7 +9,10 @@ pub fn setup_logger(
     uuid: &String,
     use_mongodb: bool,
 ) -> Result<Option<Box<GzipLogWrapper>>, InitError> {
-    let dispatch = fern::Dispatch::new()
+    let filename = format!("{}_{}.log.gz", labelname, uuid);
+    let file_logger = GzipLogWrapper::new(&filename);
+    let logger_clone = Box::new(file_logger.clone()) as Box<dyn Log>;
+    fern::Dispatch::new()
         .format(move |out, message, record| {
             out.finish(format_args!(
                 "[{} {}] {}",
@@ -19,17 +22,12 @@ pub fn setup_logger(
             ))
         })
         .level(log::LevelFilter::Trace)
-        .chain(std::io::stdout());
+        .chain(std::io::stdout())
+        .chain(logger_clone)
+        .apply()?;
 
     if !use_mongodb {
-        let filename = format!("{}_{}.log.gz", labelname, uuid);
-        let file_logger = GzipLogWrapper::new(&filename);
-        let logger_clone = Box::new(file_logger.clone()) as Box<dyn Log>;
-        dispatch.chain(logger_clone).apply()?;
         trace!("Label: {} UUID: {}", labelname, uuid);
-        Ok(Some(Box::new(file_logger)))
-    } else {
-        dispatch.apply()?;
-        Ok(None)
     }
+    Ok(Some(Box::new(file_logger)))
 }
