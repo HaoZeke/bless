@@ -12,7 +12,8 @@ pub fn setup_logger(
     let filename = format!("{}_{}.log.gz", labelname, uuid);
     let file_logger = GzipLogWrapper::new(&filename);
     let logger_clone = Box::new(file_logger.clone()) as Box<dyn Log>;
-    fern::Dispatch::new()
+
+    let stdout_dispatch = fern::Dispatch::new()
         .format(move |out, message, record| {
             out.finish(format_args!(
                 "[{} {}] {}",
@@ -21,9 +22,20 @@ pub fn setup_logger(
                 message
             ))
         })
-        .level(log::LevelFilter::Trace)
         .chain(std::io::stdout())
+        .level(log::LevelFilter::Trace);
+
+    let file_dispatch = fern::Dispatch::new()
         .chain(logger_clone)
+        .level(if use_mongodb {
+            log::LevelFilter::Info
+        } else {
+            log::LevelFilter::Trace
+        });
+
+    fern::Dispatch::new()
+        .chain(stdout_dispatch)
+        .chain(file_dispatch)
         .apply()?;
 
     if !use_mongodb {
