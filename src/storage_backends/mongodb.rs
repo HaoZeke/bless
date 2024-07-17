@@ -1,12 +1,16 @@
+use mongodb::bson::serde_helpers::bson_datetime_as_rfc3339_string;
+use mongodb::bson::DateTime;
 use mongodb::{
     bson::{doc, Binary, Document},
     Client, Collection,
 };
+use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 use tokio::io;
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SaveGzipBlobParams<'a> {
     pub cmd: &'a str,
     pub args: &'a str,
@@ -14,6 +18,10 @@ pub struct SaveGzipBlobParams<'a> {
     pub duration: &'a str,
     pub uuid: &'a str,
     pub file_path: &'a Path,
+    #[serde(with = "bson_datetime_as_rfc3339_string")]
+    pub start_time: DateTime,
+    #[serde(with = "bson_datetime_as_rfc3339_string")]
+    pub end_time: DateTime,
 }
 
 pub struct MongoDBStorage {
@@ -38,6 +46,8 @@ impl MongoDBStorage {
             "label": params.label,
             "run_uuid": params.uuid,
             "duration": params.duration,
+            "start_time": params.start_time,
+            "end_time": params.end_time,
             "gzip_blob": Binary { subtype: mongodb::bson::spec::BinarySubtype::Generic, bytes: buffer },
         };
 

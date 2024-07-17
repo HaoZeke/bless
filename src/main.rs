@@ -66,6 +66,8 @@ async fn main() -> std::io::Result<()> {
             duration: &duration,
             uuid: &run_uuid,
             file_path,
+            start_time: start_time.into(),
+            end_time: end_time.into(),
         };
 
         mongodb_storage.save_gzip_blob(params).await?;
