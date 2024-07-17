@@ -9,6 +9,13 @@ During development, a full interface to HPC oriented workflow engines like
 AiiDA, Fireworks, Jobflow, and the like is typically too heavy, and more
 importantly, the API is often not stable. That being said, this could also be
 used in conjunction with ~pychum~ and workflow runners like Snakemake to store
+** Design
+*** File (gzip) Writer
+This overrides the ~Log~ levels of Rust, so:
+- ~TRACE~ is for additional information for the command, as written by ~bless~
+- ~INFO~ corresponds to ~stdout~ of the command
+- ~ERROR~ corresponds to a ~bless~ error
+- ~WARN~ corresponds to ~stderr~ of the command
 * Usage
 #+begin_src bash
 cargo build --release
@@ -24,6 +31,7 @@ zcat default_label*.gz
 - Wild :: For cross-platform globs
 - Flate2 :: For compression
 - UUID ::  For the unique IDs
+- Fern :: For log handling
 ** Local MongoDB
 Assuming ~pixi~ is used to get an instance of ~mongod~.
 #+begin_src bash
