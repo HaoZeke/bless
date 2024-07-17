@@ -9,7 +9,7 @@ use crate::logger::setup_logger;
 use crate::runner::run_command;
 use bless::storage::Storage;
 use bless::storage_backends::{file::FileStorage, mongodb::MongoDBStorage};
-use log::error;
+use log::{error, trace};
 use uuid::Uuid;
 
 #[tokio::main]
@@ -25,9 +25,24 @@ async fn main() -> std::io::Result<()> {
 
     let gzip_logger = setup_logger(label, &run_uuid, use_mongodb).expect("Failed to set up logger");
 
+    let start_time = std::time::SystemTime::now();
     if let Err(e) = run_command(command, args).await {
         error!("Failed to run command: {} {}", command, args.join(" "));
         error!("Error: {}", e);
+    }
+    let end_time = std::time::SystemTime::now();
+    match end_time.duration_since(start_time) {
+        Ok(duration) => {
+            trace!(
+                "{} {} took {} to complete.",
+                command,
+                args.join(" "),
+                humantime::format_duration(duration)
+            );
+        }
+        Err(e) => {
+            error!("Error calculating duration: {}", e);
+        }
     }
 
     if use_mongodb {
