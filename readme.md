@@ -3,17 +3,18 @@
 
 # Table of Contents
 
--   [About](#orgf98f51a)
-    -   [Why?](#org1cbb517)
--   [Usage](#org2cbc8ca)
--   [Development](#orgbd356c3)
-    -   [Component Rationale](#org9a41732)
-    -   [Local MongoDB](#orgef90813)
-    -   [Documentation](#orgc71b0e2)
--   [License](#orgc7a316b)
+-   [About](#org3bf058b)
+    -   [Why?](#org37bc08e)
+    -   [Design](#orgfc61a1a)
+-   [Usage](#org2b345d0)
+-   [Development](#org603159f)
+    -   [Component Rationale](#org89150b7)
+    -   [Local MongoDB](#orgb4d73ad)
+    -   [Documentation](#org7940300)
+-   [License](#org654b5a6)
 
 
-<a id="orgf98f51a"></a>
+<a id="org3bf058b"></a>
 
 # About
 
@@ -21,7 +22,7 @@ A simple command line wrapper for repeated runs, with metadata and lightweight
 tracking.
 
 
-<a id="org1cbb517"></a>
+<a id="org37bc08e"></a>
 
 ## Why?
 
@@ -31,7 +32,28 @@ importantly, the API is often not stable. That being said, this could also be
 used in conjunction with `pychum` and workflow runners like Snakemake to store
 
 
-<a id="org2cbc8ca"></a>
+<a id="orgfc61a1a"></a>
+
+## Design
+
+
+### File (gzip) Writer
+
+This overrides the `Log` levels of Rust, so:
+
+-   `TRACE` is for additional information for the command, as written by `bless`
+-   `INFO` corresponds to `stdout` of the command
+-   `ERROR` corresponds to a `bless` error
+-   `WARN` corresponds to `stderr` of the command
+
+
+### MongoDB Writer
+
+Only `stderr` and `stdout` of the command are stored in a `.gz` file which is
+added to the database as a binary blob, with additional metadata.
+
+
+<a id="org2b345d0"></a>
 
 # Usage
 
@@ -43,12 +65,12 @@ used in conjunction with `pychum` and workflow runners like Snakemake to store
     zcat default_label*.gz
 
 
-<a id="orgbd356c3"></a>
+<a id="org603159f"></a>
 
 # Development
 
 
-<a id="org9a41732"></a>
+<a id="org89150b7"></a>
 
 ## Component Rationale
 
@@ -56,9 +78,10 @@ used in conjunction with `pychum` and workflow runners like Snakemake to store
 -   **Wild:** For cross-platform globs
 -   **Flate2:** For compression
 -   **UUID:** For the unique IDs
+-   **Fern:** For log handling
 
 
-<a id="orgef90813"></a>
+<a id="orgb4d73ad"></a>
 
 ## Local MongoDB
 
@@ -71,10 +94,22 @@ I use `npx mongosh` for validating commands.
 
     npx mongsh
     use local
+    # Show all entries
     db.commands.find()
+    # Suppress blob data
+    db.commands.find({}, { gzip_blob: 0 })
+    # Dangerous, drop all entries!
+    db.getCollectionNames().forEach(c=>db[c].drop())
 
 
-<a id="orgc71b0e2"></a>
+### Extracting run output
+
+Since the `.gzip` is stored as binary data keyed to the entry, a small helper script is provided.
+
+    python scripts/get_db_gzip.py --db-name local --collection-name commands --query-field args --query-value orca.inp
+
+
+<a id="org7940300"></a>
 
 ## Documentation
 
@@ -88,7 +123,7 @@ The `readme` can be constructed via:
 metadata more generically.
 
 
-<a id="orgc7a316b"></a>
+<a id="org654b5a6"></a>
 
 # License
 

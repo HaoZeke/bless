@@ -1,8 +1,9 @@
+use log::{error, info, warn};
 use std::io::{self, BufRead, BufReader};
 use std::process::{Command, Stdio};
 use tokio::task;
 
-pub async fn run_command(command: &str, args: &[&str]) -> Result<Vec<String>, io::Error> {
+pub async fn run_command(command: &str, args: &[&str]) -> Result<(), io::Error> {
     // Clone `command` and `args` to satisfy 'static lifetime requirements.
     let command = command.to_string();
     let args = args
@@ -19,30 +20,33 @@ pub async fn run_command(command: &str, args: &[&str]) -> Result<Vec<String>, io
 
         match process {
             Ok(mut child) => {
-                let mut output_data = Vec::new();
+                let stdout = child.stdout.take().expect("Failed to capture stdout");
+                let stderr = child.stderr.take().expect("Failed to capture stderr");
 
-                // Merge stdout and stderr
-                if let Some(ref mut stdout) = child.stdout {
-                    let reader = BufReader::new(stdout);
-                    reader.lines().for_each(|line| {
-                        if let Ok(line) = line {
-                            println!("{}", line); // Emulate 'tee' behavior by printing to stdout
-                            output_data.push(line);
+                let stdout_reader = BufReader::new(stdout);
+                let stderr_reader = BufReader::new(stderr);
+
+                let stdout_handle = std::thread::spawn(move || {
+                    for line in stdout_reader.lines() {
+                        match line {
+                            Ok(line) => info!("{}", line),
+                            Err(e) => error!("Error reading stdout: {}", e),
                         }
-                    });
-                }
+                    }
+                });
 
-                if let Some(ref mut stderr) = child.stderr {
-                    let reader = BufReader::new(stderr);
-                    reader.lines().for_each(|line| {
-                        if let Ok(line) = line {
-                            eprintln!("{}", line); // Print stderr lines to stderr
-                            output_data.push(line);
+                let stderr_handle = std::thread::spawn(move || {
+                    for line in stderr_reader.lines() {
+                        match line {
+                            Ok(line) => warn!("{}", line),
+                            Err(e) => error!("Error reading stderr: {}", e),
                         }
-                    });
-                }
+                    }
+                });
 
-                // Wait for the process to exit and check for errors
+                let _ = stdout_handle.join();
+                let _ = stderr_handle.join();
+
                 let status = child.wait()?;
                 if !status.success() {
                     return Err(io::Error::new(
@@ -51,7 +55,7 @@ pub async fn run_command(command: &str, args: &[&str]) -> Result<Vec<String>, io
                     ));
                 }
 
-                Ok(output_data)
+                Ok(())
             }
             Err(e) => Err(io::Error::new(io::ErrorKind::Other, e.to_string())),
         }
