@@ -1,7 +1,7 @@
-use bless::storage_backends::gzip::GzipLogWrapper;
+use crate::storage_backends::gzip::GzipLogWrapper;
 use fern::InitError;
+use log::trace;
 use log::Log;
-use log::{trace, warn};
 use std::time::SystemTime;
 
 pub fn setup_logger(
