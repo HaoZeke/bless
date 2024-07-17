@@ -7,8 +7,7 @@ use crate::cli::build_cli;
 use crate::db::{list_databases, setup_mongodb};
 use crate::logger::setup_logger;
 use crate::runner::run_command;
-use bless::storage::Storage;
-use bless::storage_backends::{file::FileStorage, mongodb::MongoDBStorage};
+use bless::storage_backends::mongodb::{MongoDBStorage, SaveGzipBlobParams};
 use log::{error, trace};
 use std::path::Path;
 use uuid::Uuid;
@@ -65,16 +64,16 @@ async fn main() -> std::io::Result<()> {
         let filename = format!("{}_{}.log.gz", label, run_uuid);
         let file_path = Path::new(&filename);
 
-        mongodb_storage
-            .save_gzip_blob(
-                command,
-                &args.join(" "),
-                label,
-                &duration,
-                &run_uuid,
-                file_path,
-            )
-            .await?;
+        let params = SaveGzipBlobParams {
+            cmd: command,
+            args: &args.join(" "),
+            label,
+            duration: &duration,
+            uuid: &run_uuid,
+            file_path,
+        };
+
+        mongodb_storage.save_gzip_blob(params).await?;
     }
 
     Ok(())
