@@ -25,27 +25,18 @@ async fn main() -> std::io::Result<()> {
 
     let gzip_logger = setup_logger(label, &run_uuid, use_mongodb).expect("Failed to set up logger");
 
-    let output_data_result = run_command(command, args).await;
-    let output_data = match output_data_result {
-        Ok(data) => data,
-        Err(e) => {
-            error!("{}", e);
-            vec![format!(
-                "Tried running command: {} {}\nError: {}",
-                command,
-                args.join(" "),
-                e
-            )]
-        }
-    };
+    if let Err(e) = run_command(command, args).await {
+        error!("Failed to run command: {} {}", command, args.join(" "));
+        error!("Error: {}", e);
+    }
 
     if use_mongodb {
-        let client = setup_mongodb().await?;
-        list_databases(&client).await?;
-        let mongodb_storage = MongoDBStorage::new(&client, "local", "commands")
-            .await
-            .expect("Failed to create MongoDB storage");
-        mongodb_storage.save(label, &run_uuid, &output_data).await?;
+        // let client = setup_mongodb().await?;
+        // list_databases(&client).await?;
+        // let mongodb_storage = MongoDBStorage::new(&client, "local", "commands")
+        //     .await
+        //     .expect("Failed to create MongoDB storage");
+        // mongodb_storage.save(label, &run_uuid, &output_data).await?;
     } else {
         // let filename = format!("{}_{}.out.gz", label, run_uuid);
         // let file_storage = FileStorage::new(&filename);
