@@ -1,12 +1,7 @@
-mod cli;
-mod db;
-mod logger;
-mod runner;
-
-use crate::cli::build_cli;
-use crate::db::{list_databases, setup_mongodb};
-use crate::logger::setup_logger;
-use crate::runner::run_command;
+use bless::cli::build_cli;
+use bless::db::{list_databases, setup_mongodb};
+use bless::logger::setup_logger;
+use bless::runner::run_command;
 use bless::storage_backends::mongodb::{MongoDBStorage, SaveGzipBlobParams};
 use log::{error, trace};
 use std::path::Path;
