@@ -1,5 +1,6 @@
 use bless::storage_backends::gzip::GzipLogWrapper;
 use fern::InitError;
+use log::trace;
 use log::Log;
 use std::time::SystemTime;
 
@@ -17,7 +18,7 @@ pub fn setup_logger(
                 message
             ))
         })
-        .level(log::LevelFilter::Debug)
+        .level(log::LevelFilter::Trace)
         .chain(std::io::stdout());
 
     if !use_mongodb {
@@ -25,6 +26,7 @@ pub fn setup_logger(
         let file_logger = GzipLogWrapper::new(&filename);
         let logger_clone = Box::new(file_logger.clone()) as Box<dyn Log>;
         dispatch.chain(logger_clone).apply()?;
+        trace!("Label: {} UUID: {}", labelname, uuid);
         Ok(Some(Box::new(file_logger)))
     } else {
         dispatch.apply()?;
