@@ -1,4 +1,3 @@
-use crate::storage::Storage;
 use mongodb::{
     bson::{doc, Binary, Document},
     Client, Collection,
