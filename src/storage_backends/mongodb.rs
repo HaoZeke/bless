@@ -35,11 +35,23 @@ impl MongoDBStorage {
         Ok(Self { collection, db })
     }
 
-    pub async fn save_gzip_blob(&self, params: SaveGzipBlobParams<'_>) -> io::Result<()> {
+    pub async fn save_gzip_blob(
+        &self,
+        params: SaveGzipBlobParams<'_>,
+        use_gridfs: bool,
+    ) -> io::Result<()> {
         let fsize = fs::metadata(params.file_path)?.len();
-        trace!("Filesize is {}", fsize);
+        let large_log = fsize > 15 * 1024 * 1024;
 
-        let doc = if fsize > 15 * 1024 * 1024 {
+        let doc = if use_gridfs || large_log {
+            if large_log {
+                trace!(
+                    "Using GridFS, since the log is too large, {}",
+                    fsize / (1024 * 1024)
+                );
+            } else {
+                trace!("GridFS was requested");
+            }
             // GridFS since bson size must be less than 16MB
             let bucket = self.db.gridfs_bucket(None);
             let file_bytes = fs::read(params.file_path)?;
@@ -51,8 +63,6 @@ impl MongoDBStorage {
 
             upload_stream.write_all(&file_bytes).await?;
             upload_stream.close().await?;
-
-            error!("Working");
 
             let file_id = upload_stream.id();
 
