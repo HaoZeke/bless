@@ -26,7 +26,6 @@ pub async fn run_command(command: &str, args: &[&str]) -> Result<(), io::Error> 
                 let stdout_reader = BufReader::new(stdout);
                 let stderr_reader = BufReader::new(stderr);
 
-                // Read stdout in a separate thread
                 let stdout_handle = std::thread::spawn(move || {
                     for line in stdout_reader.lines() {
                         match line {
@@ -36,7 +35,6 @@ pub async fn run_command(command: &str, args: &[&str]) -> Result<(), io::Error> 
                     }
                 });
 
-                // Read stderr in a separate thread
                 let stderr_handle = std::thread::spawn(move || {
                     for line in stderr_reader.lines() {
                         match line {
@@ -46,11 +44,9 @@ pub async fn run_command(command: &str, args: &[&str]) -> Result<(), io::Error> 
                     }
                 });
 
-                // Wait for both threads to finish
                 let _ = stdout_handle.join();
                 let _ = stderr_handle.join();
 
-                // Wait for the process to exit and check for errors
                 let status = child.wait()?;
                 if !status.success() {
                     return Err(io::Error::new(
