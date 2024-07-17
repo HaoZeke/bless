@@ -4,7 +4,7 @@ use flate2::write::GzEncoder;
 use flate2::Compression;
 use std::fs::File;
 use std::io::{self, Write};
-use std::sync::{Arc, Mutex}; // Ensure this is correctly imported from its new location
+use std::sync::{Arc, Mutex};
 
 pub struct FileStorage {
     encoder: Arc<Mutex<Option<GzEncoder<File>>>>,
