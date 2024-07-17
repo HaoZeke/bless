@@ -1,4 +1,4 @@
-use log::{error, info};
+use log::{error, info, warn};
 use std::io::{self, BufRead, BufReader};
 use std::process::{Command, Stdio};
 use tokio::task;
@@ -38,7 +38,7 @@ pub async fn run_command(command: &str, args: &[&str]) -> Result<(), io::Error> 
                 let stderr_handle = std::thread::spawn(move || {
                     for line in stderr_reader.lines() {
                         match line {
-                            Ok(line) => error!("{}", line),
+                            Ok(line) => warn!("{}", line),
                             Err(e) => error!("Error reading stderr: {}", e),
                         }
                     }
