@@ -52,6 +52,11 @@ db.commands.find({}, { gzip_blob: 0 })
 # Dangerous, drop all entries!
 db.getCollectionNames().forEach(c=>db[c].drop())
 #+end_src
+*** Extracting run output
+Since the ~.gzip~ is stored as binary data keyed to the entry, a small helper script is provided.
+#+begin_src python
+python scripts/get_db_gzip.py --db-name local --collection-name commands --query-field args --query-value orca.inp
+#+end_src
 ** Documentation
 *** Readme
 The ~readme~ can be constructed via:
