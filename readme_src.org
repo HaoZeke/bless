@@ -16,6 +16,9 @@ This overrides the ~Log~ levels of Rust, so:
 - ~INFO~ corresponds to ~stdout~ of the command
 - ~ERROR~ corresponds to a ~bless~ error
 - ~WARN~ corresponds to ~stderr~ of the command
+*** MongoDB Writer
+Only ~stderr~ and ~stdout~ of the command are stored in a ~.gz~ file which is
+added to the database as a binary blob, with additional metadata.
 * Usage
 #+begin_src bash
 cargo build --release
@@ -42,7 +45,12 @@ I use ~npx mongosh~ for validating commands.
 #+begin_src bash
 npx mongsh
 use local
+# Show all entries
 db.commands.find()
+# Suppress blob data
+db.commands.find({}, { gzip_blob: 0 })
+# Dangerous, drop all entries!
+db.getCollectionNames().forEach(c=>db[c].drop())
 #+end_src
 ** Documentation
 *** Readme
