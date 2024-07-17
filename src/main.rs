@@ -10,6 +10,7 @@ use crate::runner::run_command;
 use bless::storage::Storage;
 use bless::storage_backends::{file::FileStorage, mongodb::MongoDBStorage};
 use log::{error, trace};
+use std::path::Path;
 use uuid::Uuid;
 
 #[tokio::main]
@@ -31,37 +32,49 @@ async fn main() -> std::io::Result<()> {
         error!("Error: {}", e);
     }
     let end_time = std::time::SystemTime::now();
-    match end_time.duration_since(start_time) {
+    let duration = match end_time.duration_since(start_time) {
         Ok(duration) => {
-            trace!(
-                "{} {} took {} to complete.",
-                command,
-                args.join(" "),
-                humantime::format_duration(duration)
-            );
+            if !use_mongodb {
+                trace!(
+                    "{} {} took {} to complete.",
+                    command,
+                    args.join(" "),
+                    humantime::format_duration(duration)
+                );
+            }
+            humantime::format_duration(duration).to_string()
         }
         Err(e) => {
             error!("Error calculating duration: {}", e);
+            "unknown".to_string()
         }
+    };
+
+    if let Some(logger) = gzip_logger {
+        logger.finish().expect("Failed to finalize GzipLogger");
     }
 
     if use_mongodb {
-        // let client = setup_mongodb().await?;
-        // list_databases(&client).await?;
-        // let mongodb_storage = MongoDBStorage::new(&client, "local", "commands")
-        //     .await
-        //     .expect("Failed to create MongoDB storage");
-        // mongodb_storage.save(label, &run_uuid, &output_data).await?;
-    } else {
-        // let filename = format!("{}_{}.out.gz", label, run_uuid);
-        // let file_storage = FileStorage::new(&filename);
-        // file_storage.save(label, &run_uuid, &output_data).await?;
-        // file_storage.finish().await.expect("Closing GZip failed");
+        let client = setup_mongodb().await?;
+        list_databases(&client).await?;
+        let mongodb_storage = MongoDBStorage::new(&client, "local", "commands")
+            .await
+            .expect("Failed to create MongoDB storage");
 
-        // Ensure the logger is properly finalized
-        if let Some(logger) = gzip_logger {
-            logger.finish().expect("Failed to finalize GzipLogger");
-        }
+        // Store the gzip file in MongoDB
+        let filename = format!("{}_{}.log.gz", label, run_uuid);
+        let file_path = Path::new(&filename);
+
+        mongodb_storage
+            .save_gzip_blob(
+                command,
+                &args.join(" "),
+                label,
+                &duration,
+                &run_uuid,
+                file_path,
+            )
+            .await?;
     }
 
     Ok(())
