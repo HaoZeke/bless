@@ -1,3 +1,4 @@
+use log::{error, info};
 use std::io::{self, BufRead, BufReader};
 use std::process::{Command, Stdio};
 use tokio::task;
@@ -26,7 +27,7 @@ pub async fn run_command(command: &str, args: &[&str]) -> Result<Vec<String>, io
                     let reader = BufReader::new(stdout);
                     reader.lines().for_each(|line| {
                         if let Ok(line) = line {
-                            println!("{}", line); // Emulate 'tee' behavior by printing to stdout
+                            info!("{}", line);
                             output_data.push(line);
                         }
                     });
@@ -36,7 +37,7 @@ pub async fn run_command(command: &str, args: &[&str]) -> Result<Vec<String>, io
                     let reader = BufReader::new(stderr);
                     reader.lines().for_each(|line| {
                         if let Ok(line) = line {
-                            eprintln!("{}", line); // Print stderr lines to stderr
+                            error!("{}", line);
                             output_data.push(line);
                         }
                     });
