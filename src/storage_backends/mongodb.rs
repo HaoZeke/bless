@@ -9,7 +9,7 @@ use std::io::Read;
 use std::path::Path;
 use tokio::io;
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct SaveGzipBlobParams<'a> {
     pub cmd: &'a str,
     pub args: &'a str,
