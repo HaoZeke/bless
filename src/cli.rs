@@ -23,5 +23,10 @@ pub fn build_cli() -> ArgMatches {
                 .long("use-mongodb")
                 .help("Store output in MongoDB instead of a file"),
         )
+        .arg(
+            Arg::with_name("use_gridfs")
+                .long("use-gridfs")
+                .help("Use the GridFS large file object storage for logs"),
+        )
         .get_matches()
 }

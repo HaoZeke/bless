@@ -3,18 +3,19 @@
 
 # Table of Contents
 
--   [About](#org3bf058b)
-    -   [Why?](#org37bc08e)
-    -   [Design](#orgfc61a1a)
--   [Usage](#org2b345d0)
--   [Development](#org603159f)
-    -   [Component Rationale](#org89150b7)
-    -   [Local MongoDB](#orgb4d73ad)
-    -   [Documentation](#org7940300)
--   [License](#org654b5a6)
+-   [About](#orgbe6d539)
+    -   [Why?](#org2f008c9)
+    -   [Features](#orge7b86ad)
+    -   [Design](#orgfd513c6)
+-   [Usage](#org0e17b2e)
+-   [Development](#org67fe805)
+    -   [Component Rationale](#orgeaf99b1)
+    -   [Local MongoDB](#org2d5e207)
+    -   [Documentation](#org78d2e44)
+-   [License](#orgff774ac)
 
 
-<a id="org3bf058b"></a>
+<a id="orgbe6d539"></a>
 
 # About
 
@@ -22,7 +23,7 @@ A simple command line wrapper for repeated runs, with metadata and lightweight
 tracking.
 
 
-<a id="org37bc08e"></a>
+<a id="org2f008c9"></a>
 
 ## Why?
 
@@ -30,9 +31,20 @@ During development, a full interface to HPC oriented workflow engines like
 AiiDA, Fireworks, Jobflow, and the like is typically too heavy, and more
 importantly, the API is often not stable. That being said, this could also be
 used in conjunction with `pychum` and workflow runners like Snakemake to store
+full logs for later.
 
 
-<a id="orgfc61a1a"></a>
+<a id="orge7b86ad"></a>
+
+## Features
+
+-   Fast, compressed, logging, with almost zero overhead
+-   File and MongoDB interface
+    -   Including large log support via GridFS
+    -   Helper script also provided to recreate logs
+
+
+<a id="orgfd513c6"></a>
 
 ## Design
 
@@ -53,7 +65,7 @@ Only `stderr` and `stdout` of the command are stored in a `.gz` file which is
 added to the database as a binary blob, with additional metadata.
 
 
-<a id="org2b345d0"></a>
+<a id="org0e17b2e"></a>
 
 # Usage
 
@@ -65,12 +77,12 @@ added to the database as a binary blob, with additional metadata.
     zcat default_label*.gz
 
 
-<a id="org603159f"></a>
+<a id="org67fe805"></a>
 
 # Development
 
 
-<a id="org89150b7"></a>
+<a id="orgeaf99b1"></a>
 
 ## Component Rationale
 
@@ -81,7 +93,7 @@ added to the database as a binary blob, with additional metadata.
 -   **Fern:** For log handling
 
 
-<a id="orgb4d73ad"></a>
+<a id="org2d5e207"></a>
 
 ## Local MongoDB
 
@@ -104,12 +116,29 @@ I use `npx mongosh` for validating commands.
 
 ### Extracting run output
 
-Since the `.gzip` is stored as binary data keyed to the entry, a small helper script is provided.
+Since the `.gzip` is stored as binary data keyed to the `gzip_blob` entry, a
+small helper script is provided.
 
-    python scripts/get_db_gzip.py --db-name local --collection-name commands --query-field args --query-value orca.inp
+    python scripts/get_db_gzip.py --db-name local --collection-name commands --query-field label --query-value np_nogrid --output-file output.gzip
+
+We can check that the generated file is the same.
+
+    sha256sum output.gzip np_nogrid_b7b3a733-7383-4367-b5c6-abaf55051114.log.gz
+    71b3678846c29daa1c486473f7770b72ff08b99001d26e38df81662e6eeedc3f  output.gzip
+    71b3678846c29daa1c486473f7770b72ff08b99001d26e38df81662e6eeedc3f  np_nogrid_b7b3a733-7383-4367-b5c6-abaf55051114.log.gz
+    # or
+    diff output.gzip np_nogrid*.gz
 
 
-<a id="org7940300"></a>
+### Large File Support
+
+When a log is larger than 15 MB, `bless` will use GridFS to chunk and store the
+file. The script automatically handles the case of having large log files by
+using GridFS to assemble them from `gzip_blob_id`. This can be requested via the
+command-line manually as well.
+
+
+<a id="org78d2e44"></a>
 
 ## Documentation
 
@@ -123,7 +152,7 @@ The `readme` can be constructed via:
 metadata more generically.
 
 
-<a id="org654b5a6"></a>
+<a id="orgff774ac"></a>
 
 # License
 
