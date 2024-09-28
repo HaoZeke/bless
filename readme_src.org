@@ -58,6 +58,7 @@ Since the ~.gzip~ is stored as binary data keyed to the entry, a small helper sc
 python scripts/get_db_gzip.py --db-name local --collection-name commands --query-field args --query-value orca.inp
 #+end_src
 ** Documentation
+We use ~cocogitto~ via ~cog~ to handle commit conventions.
 *** Readme
 The ~readme~ can be constructed via:
 #+begin_src bash
