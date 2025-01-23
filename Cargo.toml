@@ -8,7 +8,7 @@ flate2 = "1.0"
 uuid = { version = "1", features = ["v4"] }
 clap = "3.0"
 wild = "2.2.1"
-tokio = {"version"="1.36.0", features=["rt-multi-thread", "macros"]}
+tokio = {"version"="1.36.0", features=["rt-multi-thread", "macros", "signal"]}
 async-trait = "0.1.77"
 mongodb = "2.8.1"
 bson = {version="2.9.0", features = ["chrono-0_4"]}

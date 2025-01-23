@@ -20,13 +20,50 @@ async fn main() -> std::io::Result<()> {
     let run_uuid = Uuid::new_v4().to_string();
 
     let gzip_logger = setup_logger(label, &run_uuid, use_mongodb).expect("Failed to set up logger");
-    // Create a SIGINT signal stream
-    let mut sigint_stream = signal(SignalKind::interrupt())?;
     // Spawn a task to handle signals
     tokio::spawn({
         async move {
-            while let Some(()) = sigint_stream.recv().await {
-                error!("Received SIGINT (Ctrl+C)");
+            // Create signal streams
+            let mut sigterm =
+                signal(SignalKind::terminate()).expect("Failed to create SIGTERM stream");
+            let mut sigint =
+                signal(SignalKind::interrupt()).expect("Failed to create SIGINT stream");
+            let mut sighup = signal(SignalKind::hangup()).expect("Failed to create SIGHUP stream");
+            let mut sigusr1 =
+                signal(SignalKind::user_defined1()).expect("Failed to create SIGUSR1 stream");
+            let mut sigusr2 =
+                signal(SignalKind::user_defined2()).expect("Failed to create SIGUSR2 stream");
+            let mut sigpipe = signal(SignalKind::pipe()).expect("Failed to create SIGPIPE stream");
+            let mut sigquit = signal(SignalKind::quit()).expect("Failed to create SIGQUIT stream");
+            let mut sigio = signal(SignalKind::io()).expect("Failed to create SIGIO stream");
+
+            loop {
+                tokio::select! {
+                    _ = sigterm.recv() => {
+                        error!("Received SIGTERM");
+                    },
+                    _ = sigint.recv() => {
+                        error!("Received SIGINT");
+                    },
+                    _ = sighup.recv() => {
+                        error!("Received SIGHUP");
+                    },
+                    _ = sigusr1.recv() => {
+                        error!("Received SIGUSR1");
+                    },
+                    _ = sigusr2.recv() => {
+                        error!("Received SIGUSR2");
+                    },
+                    _ = sigpipe.recv() => {
+                        error!("Received SIGPIPE");
+                    },
+                    _ = sigquit.recv() => {
+                        error!("Received SIGQUIT");
+                    },
+                    _ = sigio.recv() => {
+                        error!("Received SIGIO");
+                    },
+                }
             }
         }
     });
