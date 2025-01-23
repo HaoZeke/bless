@@ -5,6 +5,7 @@ use bless::runner::run_command;
 use bless::storage_backends::mongodb::{MongoDBStorage, SaveGzipBlobParams};
 use log::{error, trace};
 use std::path::Path;
+use tokio::signal::unix::{signal, SignalKind};
 use uuid::Uuid;
 
 #[tokio::main]
@@ -19,6 +20,16 @@ async fn main() -> std::io::Result<()> {
     let run_uuid = Uuid::new_v4().to_string();
 
     let gzip_logger = setup_logger(label, &run_uuid, use_mongodb).expect("Failed to set up logger");
+    // Create a SIGINT signal stream
+    let mut sigint_stream = signal(SignalKind::interrupt())?;
+    // Spawn a task to handle signals
+    tokio::spawn({
+        async move {
+            while let Some(()) = sigint_stream.recv().await {
+                error!("Received SIGINT (Ctrl+C)");
+            }
+        }
+    });
 
     let start_time = std::time::SystemTime::now();
     if let Err(e) = run_command(command, args).await {
