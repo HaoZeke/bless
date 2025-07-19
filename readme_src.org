@@ -9,6 +9,12 @@ During development, a full interface to HPC oriented workflow engines like
 AiiDA, Fireworks, Jobflow, and the like is typically too heavy, and more
 importantly, the API is often not stable. That being said, this could also be
 used in conjunction with ~pychum~ and workflow runners like Snakemake to store
+full logs for later.
+** Features
+- Fast, compressed, logging, with almost zero overhead
+- File and MongoDB interface
+  + Including large log support via GridFS
+  + Helper script also provided to recreate logs
 ** Design
 *** File (gzip) Writer
 This overrides the ~Log~ levels of Rust, so:
@@ -53,10 +59,24 @@ db.commands.find({}, { gzip_blob: 0 })
 db.getCollectionNames().forEach(c=>db[c].drop())
 #+end_src
 *** Extracting run output
-Since the ~.gzip~ is stored as binary data keyed to the entry, a small helper script is provided.
+Since the ~.gzip~ is stored as binary data keyed to the ~gzip_blob~ entry, a
+small helper script is provided.
 #+begin_src python
-python scripts/get_db_gzip.py --db-name local --collection-name commands --query-field args --query-value orca.inp
+python scripts/get_db_gzip.py --db-name local --collection-name commands --query-field label --query-value np_nogrid --output-file output.gzip
 #+end_src
+We can check that the generated file is the same.
+#+begin_src bash
+sha256sum output.gzip np_nogrid_b7b3a733-7383-4367-b5c6-abaf55051114.log.gz
+71b3678846c29daa1c486473f7770b72ff08b99001d26e38df81662e6eeedc3f  output.gzip
+71b3678846c29daa1c486473f7770b72ff08b99001d26e38df81662e6eeedc3f  np_nogrid_b7b3a733-7383-4367-b5c6-abaf55051114.log.gz
+# or
+diff output.gzip np_nogrid*.gz
+#+end_src
+*** Large File Support
+When a log is larger than 15 MB, ~bless~ will use GridFS to chunk and store the
+file. The script automatically handles the case of having large log files by
+using GridFS to assemble them from ~gzip_blob_id~. This can be requested via the
+command-line manually as well.
 ** Documentation
 We use ~cocogitto~ via ~cog~ to handle commit conventions.
 *** Readme

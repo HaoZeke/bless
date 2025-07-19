@@ -16,6 +16,7 @@ async fn main() -> std::io::Result<()> {
     let (command, args) = command_vec.split_first().unwrap();
     let label = matches.value_of("label").unwrap_or("default_label");
     let use_mongodb = matches.is_present("use_mongodb");
+    let use_gridfs = matches.is_present("use_gridfs");
     let run_uuid = Uuid::new_v4().to_string();
 
     let gzip_logger = setup_logger(label, &run_uuid, use_mongodb).expect("Failed to set up logger");
@@ -70,7 +71,7 @@ async fn main() -> std::io::Result<()> {
             end_time: end_time.into(),
         };
 
-        mongodb_storage.save_gzip_blob(params).await?;
+        mongodb_storage.save_gzip_blob(params, use_gridfs).await?;
     }
 
     Ok(())
