@@ -2,6 +2,11 @@
 name = "bless"
 version = "0.1.0"
 edition = "2021"
+description = "CLI logging helper for repeated runs with metadata tracking."
+keywords = ["cli", "logging"]
+categories = ["development-tools", "command-line-utilities", "database"]
+repository = "https://github.com/HaoZeke/bless"
+license = "MIT"
 
 [dependencies]
 flate2 = "1.0"

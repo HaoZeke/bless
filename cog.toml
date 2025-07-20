@@ -10,6 +10,7 @@ pre_bump_hooks = []
 post_bump_hooks = []
 pre_package_bump_hooks = []
 post_package_bump_hooks = []
+tag_prefix = "v"
 
 [git_hooks]
 
@@ -21,10 +22,15 @@ prj = { changelog_title = "Project" }
 doc = { changelog_title = "Documentation" }
 tst = { changelog_title = "Tests" }
 bld = { changelog_title = "Buildsystem" }
+gen = { changelog_title = "Generated" }
+dat = { changelog_title = "Data" }
+bench = { changelog_title = "Benchmarks" }
 
 [changelog]
 path = "CHANGELOG.md"
-authors = []
+authors = [
+        { username = "HaoZeke", signature = "Rohit Goswami" }
+]
 
 [bump_profiles]
 
