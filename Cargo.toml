@@ -1,6 +1,6 @@
 [package]
 name = "bless"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "CLI logging helper for repeated runs with metadata tracking."
 keywords = ["cli", "logging"]
