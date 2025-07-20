@@ -2,6 +2,13 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.1.1 - 2025-07-20
+#### Maintenance
+- Bump patch - (aca7dbe) - HaoZeke
+- Rework name for crates - (ded4f97) - HaoZeke
+
+- - -
+
 ## v0.1.0 - 2025-07-20
 #### Bugfixes
 - Store outputs for failing commands - (917763f) - HaoZeke
