@@ -44,6 +44,8 @@ impl Log for GzipLogWrapper {
                     record.args()
                 )
                 .unwrap();
+                // TODO(rg): Make this conditional since it might be a bit slower..
+                encoder.flush().unwrap();
             }
         }
     }
