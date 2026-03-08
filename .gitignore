@@ -19,3 +19,10 @@ target/
 # Local config
 CLAUDE.md
 .claude/
+
+# Exported RST (built from orgmode by export.el)
+docs/source/howto/
+docs/source/tutorials/
+docs/source/reference/
+docs/source/contributing/
+docs/build/
