@@ -2,6 +2,40 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## v0.2.0 - 2026-03-08
+#### Bugfixes
+- Exit code passthrough: bless now returns the wrapped command's exit code (closes #7)
+- Version string from env!("CARGO_PKG_VERSION") instead of hardcoded (closes #26)
+- Graceful error handling in gzip writer (no panics on write/flush failures)
+- Proper error types via BlessError (thiserror) replacing io::Error mapping
+#### Enhancements
+- `--no-timestamp` flag for clean stdout output, useful for piping to cf-ci
+- `--format=jsonl` output mode for structured JSON lines on stdout
+- `-o, --output` flag for explicit output path; `-o -` for stdout only (closes #25)
+- `--split` flag for separate stdout/stderr gzip files (closes #20)
+- Signal forwarding: ctrl-c kills the child process (closes #23)
+- Serve mode (feature-gated): capnp RPC log aggregation server (closes #22)
+#### Refactoring
+- Migrated clap 3 (builder API) to clap 4 (derive API)
+- Switched to tokio::process::Command (native async, no spawn_blocking)
+- Introduced BlessError enum (thiserror) for typed error handling
+- main() returns ExitCode instead of process::exit() for clean shutdown
+- Removed unused dependencies: wild, async-trait
+#### Documentation
+- Sphinx documentation site with Shibuya theme (Diataxis structure) (closes #3, #4)
+- Tutorial, how-to guides (cf-ci, MongoDB, serve), reference docs
+- Contributing guide with project structure
+#### CI
+- GitHub Actions: cargo test + clippy + fmt on ubuntu + macos (closes #13)
+- Serve feature validation with capnpc
+- Documentation build and deploy to GitHub Pages
+#### Tests
+- Rewrote test suite to exercise run_command directly
+- Added CLI parsing tests via clap try_parse_from
+- Exit code passthrough test
+
+- - -
+
 ## v0.1.1 - 2025-07-20
 #### Maintenance
 - Bump patch - (aca7dbe) - HaoZeke
