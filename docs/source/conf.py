@@ -1,5 +1,5 @@
 project = "bless"
-copyright = "2024--present, Rohit Goswami"
+copyright = '2024--present, <a href="https://rgoswami.me">Rohit Goswami</a>'
 author = "Rohit Goswami"
 release = "0.2.0"
 html_logo = "../../branding/logo/bless_logo.png"
@@ -22,9 +22,6 @@ html_theme_options = {
     "dark_code": True,
     "globaltoc_expand_depth": 2,
     "github_url": "https://github.com/HaoZeke/bless",
-    "nav_links": [
-        {"title": "rgoswami.me", "url": "https://rgoswami.me"},
-    ],
 }
 
 html_context = {

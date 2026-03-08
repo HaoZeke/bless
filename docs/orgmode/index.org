@@ -5,7 +5,11 @@
 =====
 bless
 =====
+
+:Author: `Rohit Goswami <https://rgoswami.me>`_
 #+end_export
+
+file:../../branding/logo/bless_logo.png
 
 CLI logging helper for repeated runs with metadata tracking.
 
