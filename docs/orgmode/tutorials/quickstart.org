@@ -1,0 +1,91 @@
+#+title: Quickstart
+#+author: Rohit Goswami
+
+* What you will build
+
+By the end of this tutorial you will have:
+
+- Wrapped a build command with =bless=
+- Read the compressed log output
+- Extracted errors using =cf-ci=
+
+The final output looks like this:
+
+#+begin_src bash
+$ bless --label myproject -- make -j8
+[2024-01-15T10:30:00Z INFO] gcc -c main.c -o main.o
+[2024-01-15T10:30:01Z WARN] main.c:42: warning: unused variable 'x'
+[2024-01-15T10:30:02Z INFO] gcc -o myproject main.o
+#+end_src
+
+* Install bless
+
+From source:
+
+#+begin_src bash
+git clone https://github.com/HaoZeke/bless
+cd bless
+cargo install --path .
+#+end_src
+
+Verify:
+
+#+begin_src bash
+bless --version
+#+end_src
+
+* Run a command
+
+#+begin_src bash
+bless --label myproject -- make -j8
+#+end_src
+
+This creates =myproject_{uuid}.log.gz= in the current directory.
+
+* Read the log
+
+#+begin_src bash
+zcat myproject_*.log.gz | head -20
+#+end_src
+
+Each line has a timestamp, level, and the original output.
+
+* Extract errors
+
+If you have =cf-ci= installed:
+
+#+begin_src bash
+cf-ci parse myproject_*.log.gz
+#+end_src
+
+* Output options
+
+Skip the file entirely (stdout only):
+
+#+begin_src bash
+bless -o - -- make
+#+end_src
+
+Write to a specific path:
+
+#+begin_src bash
+bless -o /tmp/build.log.gz -- make
+#+end_src
+
+JSON lines output (for piping to =jq=):
+
+#+begin_src bash
+bless --format=jsonl -- make | jq 'select(.level=="WARN")'
+#+end_src
+
+Clean output without timestamps:
+
+#+begin_src bash
+bless --no-timestamp -- make
+#+end_src
+
+* Next steps
+
+- [[file:../howto/cf-ci-integration.org][Parse bless logs with cf-ci]]
+- [[file:../howto/mongodb-setup.org][Store logs in MongoDB]]
+- [[file:../howto/serve-mode.org][Stream logs to a central server]]

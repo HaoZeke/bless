@@ -1,64 +1,48 @@
+use crate::error::BlessError;
 use log::{error, info, warn};
-use std::io::{self, BufRead, BufReader};
-use std::process::{Command, Stdio};
-use tokio::task;
+use std::process::ExitStatus;
+use std::process::Stdio;
+use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::process::Command;
 
-pub async fn run_command(command: &str, args: &[&str]) -> Result<(), io::Error> {
-    // Clone `command` and `args` to satisfy 'static lifetime requirements.
-    let command = command.to_string();
-    let args = args
-        .iter()
-        .map(|&arg| arg.to_string())
-        .collect::<Vec<String>>();
+pub async fn run_command(command: &str, args: &[String]) -> Result<ExitStatus, BlessError> {
+    let mut child = Command::new(command)
+        .args(args)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()?;
 
-    task::spawn_blocking(move || {
-        let process = Command::new(&command)
-            .args(&args)
-            .stdout(Stdio::piped())
-            .stderr(Stdio::piped())
-            .spawn();
+    let stdout = child.stdout.take().expect("stdout piped");
+    let stderr = child.stderr.take().expect("stderr piped");
 
-        match process {
-            Ok(mut child) => {
-                let stdout = child.stdout.take().expect("Failed to capture stdout");
-                let stderr = child.stderr.take().expect("Failed to capture stderr");
-
-                let stdout_reader = BufReader::new(stdout);
-                let stderr_reader = BufReader::new(stderr);
-
-                let stdout_handle = std::thread::spawn(move || {
-                    for line in stdout_reader.lines() {
-                        match line {
-                            Ok(line) => info!("{}", line),
-                            Err(e) => error!("Error reading stdout: {}", e),
-                        }
-                    }
-                });
-
-                let stderr_handle = std::thread::spawn(move || {
-                    for line in stderr_reader.lines() {
-                        match line {
-                            Ok(line) => warn!("{}", line),
-                            Err(e) => error!("Error reading stderr: {}", e),
-                        }
-                    }
-                });
-
-                let _ = stdout_handle.join();
-                let _ = stderr_handle.join();
-
-                let status = child.wait()?;
-                if !status.success() {
-                    return Err(io::Error::new(
-                        io::ErrorKind::Other,
-                        format!("Command exited with status: {}", status),
-                    ));
-                }
-
-                Ok(())
-            }
-            Err(e) => Err(io::Error::new(io::ErrorKind::Other, e.to_string())),
+    let stdout_task = tokio::spawn(async move {
+        let reader = BufReader::new(stdout);
+        let mut lines = reader.lines();
+        while let Ok(Some(line)) = lines.next_line().await {
+            info!("{}", line);
         }
-    })
-    .await?
+    });
+
+    let stderr_task = tokio::spawn(async move {
+        let reader = BufReader::new(stderr);
+        let mut lines = reader.lines();
+        while let Ok(Some(line)) = lines.next_line().await {
+            warn!("{}", line);
+        }
+    });
+
+    tokio::select! {
+        _ = async {
+            let _ = stdout_task.await;
+            let _ = stderr_task.await;
+        } => {}
+        _ = tokio::signal::ctrl_c() => {
+            // On ctrl-c, kill the child process
+            let _ = child.kill().await;
+            error!("Interrupted by signal");
+        }
+    }
+
+    let status = child.wait().await?;
+    Ok(status)
 }

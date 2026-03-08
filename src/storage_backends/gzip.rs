@@ -10,16 +10,16 @@ pub struct GzipLogWrapper {
 }
 
 impl GzipLogWrapper {
-    pub fn new(filename: &str) -> Self {
-        let out_file = File::create(filename).unwrap();
+    pub fn new(filename: &str) -> io::Result<Self> {
+        let out_file = File::create(filename)?;
         let encoder = GzEncoder::new(out_file, Compression::default());
-        Self {
+        Ok(Self {
             encoder: Arc::new(Mutex::new(Some(encoder))),
-        }
+        })
     }
 
     pub fn finish(&self) -> io::Result<()> {
-        let mut encoder_lock = self.encoder.lock().unwrap();
+        let mut encoder_lock = self.encoder.lock().expect("encoder mutex poisoned");
         if let Some(encoder) = encoder_lock.take() {
             encoder.finish()?;
         }
@@ -34,24 +34,23 @@ impl Log for GzipLogWrapper {
 
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
-            let mut encoder_lock = self.encoder.lock().unwrap();
+            let mut encoder_lock = self.encoder.lock().expect("encoder mutex poisoned");
             if let Some(ref mut encoder) = *encoder_lock {
-                writeln!(
+                let _ = writeln!(
                     encoder,
                     "[{} {}] {}",
                     humantime::format_rfc3339_seconds(std::time::SystemTime::now()),
                     record.level(),
                     record.args()
-                )
-                .unwrap();
+                );
             }
         }
     }
 
     fn flush(&self) {
-        let mut encoder_lock = self.encoder.lock().unwrap();
+        let mut encoder_lock = self.encoder.lock().expect("encoder mutex poisoned");
         if let Some(ref mut encoder) = *encoder_lock {
-            encoder.flush().unwrap();
+            let _ = encoder.flush();
         }
     }
 }
