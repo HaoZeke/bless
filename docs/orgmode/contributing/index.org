@@ -1,0 +1,80 @@
+#+title: Contributing
+#+author: Rohit Goswami
+
+* Development setup
+
+#+begin_src bash
+git clone https://github.com/HaoZeke/bless
+cd bless
+cargo build
+cargo test
+#+end_src
+
+For serve mode development:
+
+#+begin_src bash
+cargo build --features serve
+#+end_src
+
+This requires =capnpc= (Cap'n Proto compiler) to be installed.
+
+* Running checks
+
+#+begin_src bash
+cargo fmt --check
+cargo clippy -- -D warnings
+cargo test
+#+end_src
+
+* Project structure
+
+#+begin_example
+src/
+  main.rs           -- Entry point, CLI dispatch
+  cli.rs            -- Clap derive CLI definition
+  error.rs          -- BlessError enum (thiserror)
+  runner.rs         -- Async command execution (tokio::process)
+  logger.rs         -- Fern logger setup with format options
+  lib.rs            -- Module declarations
+  db.rs             -- MongoDB client setup
+  storage_backends/
+    gzip.rs         -- GzipLogWrapper (log::Log impl)
+    mongodb.rs      -- MongoDB blob storage
+  rpc/              -- (feature = "serve")
+    mod.rs
+    server.rs       -- BlessServer + LogSink impls
+    client.rs       -- RemoteLogger
+  serve.rs          -- TCP accept loop for serve mode
+schema/
+  bless_log.capnp   -- Cap'n Proto schema
+build.rs            -- capnpc compilation (feature-gated)
+tests/
+  runner.rs         -- Integration tests
+#+end_example
+
+* Commit conventions
+
+Commits follow the conventional commits format:
+
+- =feat:= new features
+- =fix:= bug fixes
+- =refactor:= code restructuring
+- =docs:= documentation changes
+- =test:= test changes
+- =chore:= maintenance
+
+* Building documentation
+
+Documentation uses Sphinx with orgmode sources exported to RST:
+
+#+begin_src bash
+pixi run docbld
+#+end_src
+
+Or manually:
+
+#+begin_src bash
+cd docs
+emacs --batch -l export.el
+sphinx-build -b html source build/html
+#+end_src

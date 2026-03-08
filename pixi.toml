@@ -1,0 +1,34 @@
+[project]
+name = "bless"
+version = "0.2.0"
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-64", "osx-arm64"]
+
+[dependencies]
+rust = ">=1.74"
+
+[feature.docs.dependencies]
+python = ">=3.11"
+pip = "*"
+emacs = "*"
+
+[feature.docs.tasks]
+mkrst = { cmd = "cd docs && emacs --batch -l export.el", description = "Export orgmode to RST" }
+pip-docs = { cmd = "pip install sphinx shibuya myst-parser sphinx-sitemap", description = "Install Sphinx deps" }
+sphinxbld = { cmd = "sphinx-build -b html docs/source docs/build/html", depends-on = ["pip-docs"] }
+docbld = { cmd = "pixi run mkrst && pixi run sphinxbld", description = "Build full documentation" }
+
+[feature.rpc.dependencies]
+capnproto = ">=1.0.2,<2"
+
+[feature.rpc.tasks]
+build-serve = { cmd = "cargo build --release --features serve", description = "Build with serve mode" }
+
+[feature.dev.tasks]
+check = { cmd = "cargo fmt --check && cargo clippy -- -D warnings && cargo test" }
+build = { cmd = "cargo build --release" }
+
+[environments]
+docs = { features = ["docs"], solve-group = "default" }
+rpc = { features = ["rpc"], solve-group = "default" }
+dev = { features = ["dev"], solve-group = "default" }
