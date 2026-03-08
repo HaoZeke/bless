@@ -19,9 +19,8 @@ sphinx-sitemap = "*"
 shibuya = "*"
 
 [feature.docs.tasks]
-mkrst = { cmd = "cd docs && emacs --batch -l export.el", description = "Export orgmode to RST" }
-sphinxbld = { cmd = "sphinx-build -b html docs/source docs/build/html" }
-docbld = { cmd = "cd docs && emacs --batch -l export.el && cd .. && sphinx-build -b html docs/source docs/build/html", description = "Build full documentation" }
+orgbld = { cmd = "emacs --batch -l docs/export.el", description = "Export orgmode to RST" }
+docbld = { cmd = "sphinx-build docs/source docs/build -b html", depends-on = ["orgbld"], description = "Build full documentation" }
 
 [feature.rpc.dependencies]
 capnproto = ">=1.0.2,<2"

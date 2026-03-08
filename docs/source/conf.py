@@ -1,6 +1,7 @@
 project = "bless"
-copyright = "2024, Rohit Goswami"
+copyright = "2024--present, Rohit Goswami"
 author = "Rohit Goswami"
+release = "0.2.0"
 
 extensions = [
     "myst_parser",
@@ -19,6 +20,7 @@ html_theme_options = {
     "accent_color": "teal",
     "dark_code": True,
     "globaltoc_expand_depth": 2,
+    "github_url": "https://github.com/HaoZeke/bless",
     "nav_links": [
         {"title": "rgoswami.me", "url": "https://rgoswami.me"},
     ],

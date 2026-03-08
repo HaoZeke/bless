@@ -20,9 +20,13 @@ target/
 CLAUDE.md
 .claude/
 
-# Exported RST (built from orgmode by export.el)
+# Documentation build artifacts
+docs/build/
+docs/doctrees/
+docs/source/*.rst
 docs/source/howto/
 docs/source/tutorials/
 docs/source/reference/
 docs/source/contributing/
-docs/build/
+docs/source/crates/
+docs/source/api/

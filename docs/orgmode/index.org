@@ -1,12 +1,19 @@
+#+title: bless
+#+options: toc:nil num:nil title:nil
+
+#+begin_export rst
+=====
 bless
 =====
+#+end_export
 
 CLI logging helper for repeated runs with metadata tracking.
 
-``bless`` wraps any command, captures stdout/stderr with timestamps, and stores
+=bless= wraps any command, captures stdout/stderr with timestamps, and stores
 the output as compressed gzip logs. Optionally stores logs in MongoDB or streams
 them to a central server via Cap'n Proto RPC.
 
+#+begin_export rst
 .. toctree::
    :maxdepth: 2
    :caption: Tutorials
@@ -35,3 +42,4 @@ them to a central server via Cap'n Proto RPC.
 
    contributing/index
    changelog
+#+end_export
