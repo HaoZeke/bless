@@ -1,0 +1,106 @@
+==========
+Quickstart
+==========
+
+    :Author: Rohit Goswami
+
+
+What you will build
+-------------------
+
+By the end of this tutorial you will have:
+
+- Wrapped a build command with ``bless``
+
+- Read the compressed log output
+
+- Extracted errors using ``cf-ci``
+
+The final output looks like this:
+
+.. code:: bash
+
+    $ bless --label myproject -- make -j8
+    [2024-01-15T10:30:00Z INFO] gcc -c main.c -o main.o
+    [2024-01-15T10:30:01Z WARN] main.c:42: warning: unused variable 'x'
+    [2024-01-15T10:30:02Z INFO] gcc -o myproject main.o
+
+Install bless
+-------------
+
+From source:
+
+.. code:: bash
+
+    git clone https://github.com/HaoZeke/bless
+    cd bless
+    cargo install --path .
+
+Verify:
+
+.. code:: bash
+
+    bless --version
+
+Run a command
+-------------
+
+.. code:: bash
+
+    bless --label myproject -- make -j8
+
+This creates ``myproject_{uuid}.log.gz`` in the current directory.
+
+Read the log
+------------
+
+.. code:: bash
+
+    zcat myproject_*.log.gz | head -20
+
+Each line has a timestamp, level, and the original output.
+
+Extract errors
+--------------
+
+If you have ``cf-ci`` installed:
+
+.. code:: bash
+
+    cf-ci parse myproject_*.log.gz
+
+Output options
+--------------
+
+Skip the file entirely (stdout only):
+
+.. code:: bash
+
+    bless -o - -- make
+
+Write to a specific path:
+
+.. code:: bash
+
+    bless -o /tmp/build.log.gz -- make
+
+JSON lines output (for piping to ``jq``):
+
+.. code:: bash
+
+    bless --format=jsonl -- make | jq 'select(.level=="WARN")'
+
+Clean output without timestamps:
+
+.. code:: bash
+
+    bless --no-timestamp -- make
+
+Next steps
+----------
+
+- `Parse bless logs with cf-ci <../howto/cf-ci-integration.rst>`_
+
+- `Store logs in MongoDB <../howto/mongodb-setup.rst>`_
+
+- `Stream logs to a central server <../howto/serve-mode.rst>`_

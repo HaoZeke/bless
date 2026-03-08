@@ -1,0 +1,67 @@
+===============================
+Stream logs to a central server
+===============================
+
+    :Author: Rohit Goswami
+
+
+Overview
+--------
+
+Serve mode lets multiple ``bless`` clients stream logs to a central server via
+Cap'n Proto RPC. The server writes per-session gzip files and maintains an index.
+
+Requires building with the ``serve`` feature.
+
+Build with serve support
+------------------------
+
+.. code:: bash
+
+    cargo build --release --features serve
+
+Start the server
+----------------
+
+.. code:: bash
+
+    bless --serve :5678
+
+The server stores sessions in ``~/.local/share/bless/sessions/``.
+
+Stream from a client
+--------------------
+
+.. code:: bash
+
+    bless --remote :5678 --label ci-build -- make test
+
+To also keep a local gzip file:
+
+.. code:: bash
+
+    bless --remote :5678 --local --label ci-build -- make test
+
+Session files
+-------------
+
+Each session produces:
+
+- ``{label}_{uuid}.log.gz`` -- compressed log with timestamps
+
+- ``index.json`` -- append-only JSONL with session metadata
+
+Architecture
+------------
+
+::
+
+    client                     server
+      |                          |
+      |-- openSession(meta) ---->|
+      |<---- LogSink capability -|
+      |                          |
+      |-- writeBatch(lines) ---->|  (batched, every 64 lines or 100ms)
+      |-- writeBatch(lines) ---->|
+      |                          |
+      |-- close(exit, dur) ----->|  (finalizes gzip, writes index)

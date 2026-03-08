@@ -1,0 +1,73 @@
+==========
+Log Format
+==========
+
+    :Author: Rohit Goswami
+
+
+Default format (``--format=log``)
+---------------------------------
+
+Each line follows the pattern:
+
+::
+
+    [TIMESTAMP LEVEL] MESSAGE
+
+Where:
+
+- ``TIMESTAMP`` is RFC 3339 with second precision (e.g., ``2024-01-15T10:30:00Z``)
+
+- ``LEVEL`` is one of: ``TRACE``, ``DEBUG``, ``INFO``, ``WARN``, ``ERROR``
+
+- ``MESSAGE`` is the original stdout/stderr line
+
+Stdout lines are logged at ``INFO``. Stderr lines are logged at ``WARN``.
+
+JSONL format (``--format=jsonl``)
+---------------------------------
+
+Each line is a JSON object:
+
+.. code:: json
+
+    {"ts":"2024-01-15T10:30:00Z","level":"INFO","msg":"gcc -c main.c -o main.o"}
+
+Fields:
+
+.. table::
+
+    +-----------+--------+--------------------+
+    | Field     | Type   | Description        |
+    +===========+========+====================+
+    | ``ts``    | string | RFC 3339 timestamp |
+    +-----------+--------+--------------------+
+    | ``level`` | string | Log level          |
+    +-----------+--------+--------------------+
+    | ``msg``   | string | Original line      |
+    +-----------+--------+--------------------+
+
+No-timestamp format (``--no-timestamp``)
+----------------------------------------
+
+Stdout only (gzip file keeps timestamps):
+
+::
+
+    [LEVEL] MESSAGE
+
+Gzip file
+---------
+
+The gzip file always uses the default format with full timestamps, regardless
+of ``--format`` or ``--no-timestamp`` settings. This ensures the archival record
+is always complete.
+
+Internal log lines
+------------------
+
+``bless`` adds these internal lines:
+
+- ``TRACE`` level: label, UUID, and duration at start/end
+
+- ``ERROR`` level: command failure messages

@@ -1,0 +1,142 @@
+==================
+Cap'n Proto Schema
+==================
+
+    :Author: Rohit Goswami
+
+
+Overview
+--------
+
+The serve mode RPC protocol is defined in ``schema/bless_log.capnp``. It uses the
+capability pattern: clients open a session and receive a ``LogSink`` capability
+scoped to that session.
+
+Structs
+-------
+
+LogLine
+~~~~~~~
+
+A single log line with timestamp, level, and message.
+
+.. table::
+
+    +-----------+---------+--------------------------+
+    | Field     | Type    | Description              |
+    +===========+=========+==========================+
+    | timestamp | Float64 | Unix epoch seconds (f64) |
+    +-----------+---------+--------------------------+
+    | level     | Level   | Log level enum           |
+    +-----------+---------+--------------------------+
+    | message   | Text    | The log message          |
+    +-----------+---------+--------------------------+
+
+Level (enum)
+~~~~~~~~~~~~
+
+.. table::
+
+    +-------+-------+
+    | Value | Name  |
+    +=======+=======+
+    |     0 | trace |
+    +-------+-------+
+    |     1 | debug |
+    +-------+-------+
+    |     2 | info  |
+    +-------+-------+
+    |     3 | warn  |
+    +-------+-------+
+    |     4 | error |
+    +-------+-------+
+
+SessionMeta
+~~~~~~~~~~~
+
+Metadata sent when opening a session.
+
+.. table::
+
+    +-----------+---------+-----------------------+
+    | Field     | Type    | Description           |
+    +===========+=========+=======================+
+    | label     | Text    | Run label             |
+    +-----------+---------+-----------------------+
+    | uuid      | Text    | Run UUID              |
+    +-----------+---------+-----------------------+
+    | command   | Text    | Command name          |
+    +-----------+---------+-----------------------+
+    | args      | Text    | Command arguments     |
+    +-----------+---------+-----------------------+
+    | hostname  | Text    | Client hostname       |
+    +-----------+---------+-----------------------+
+    | startTime | Float64 | Unix epoch start time |
+    +-----------+---------+-----------------------+
+
+SessionSummary
+~~~~~~~~~~~~~~
+
+Returned by ``listSessions``.
+
+.. table::
+
+    +-----------+--------+-------------------------+
+    | Field     | Type   | Description             |
+    +===========+========+=========================+
+    | uuid      | Text   | Run UUID                |
+    +-----------+--------+-------------------------+
+    | label     | Text   | Run label               |
+    +-----------+--------+-------------------------+
+    | command   | Text   | Command name            |
+    +-----------+--------+-------------------------+
+    | duration  | Text   | Human-readable duration |
+    +-----------+--------+-------------------------+
+    | lineCount | UInt64 | Total lines logged      |
+    +-----------+--------+-------------------------+
+    | exitCode  | Int32  | Command exit code       |
+    +-----------+--------+-------------------------+
+
+Interfaces
+----------
+
+BlessServer
+~~~~~~~~~~~
+
+.. table::
+
+    +--------------+-------------------+--------------------------------+
+    | Method       | Parameters        | Returns                        |
+    +==============+===================+================================+
+    | openSession  | meta: SessionMeta | sink: LogSink                  |
+    +--------------+-------------------+--------------------------------+
+    | listSessions | limit: UInt32     | sessions: List(SessionSummary) |
+    +--------------+-------------------+--------------------------------+
+
+LogSink
+~~~~~~~
+
+.. table::
+
+    +------------+---------------------------------+---------+
+    | Method     | Parameters                      | Returns |
+    +============+=================================+=========+
+    | writeBatch | lines: List(LogLine)            | void    |
+    +------------+---------------------------------+---------+
+    | close      | exitCode: Int32, duration: Text | void    |
+    +------------+---------------------------------+---------+
+
+Data flow
+---------
+
+1. Client connects to server via TCP
+
+2. Client calls ``openSession`` with metadata
+
+3. Server creates gzip file, returns ``LogSink`` capability
+
+4. Client sends log lines in batches via ``writeBatch``
+
+5. Client calls ``close`` with exit code and duration
+
+6. Server finalizes gzip file and writes to index

@@ -1,0 +1,107 @@
+=============
+CLI Reference
+=============
+
+    :Author: Rohit Goswami
+
+
+Synopsis
+--------
+
+::
+
+    bless [OPTIONS] -- COMMAND [ARGS...]
+
+Options
+-------
+
+``--label <LABEL>``
+~~~~~~~~~~~~~~~~~~~
+
+Label for the run. Used in the output filename and MongoDB metadata.
+
+Default: ``default_label``
+
+``--use-mongodb``
+~~~~~~~~~~~~~~~~~
+
+Store the gzip log blob in MongoDB after the command finishes.
+
+Requires ``MONGODB_URI`` environment variable.
+
+``--no-timestamp``
+~~~~~~~~~~~~~~~~~~
+
+Omit timestamps from stdout output. The gzip file still includes full
+timestamps.
+
+Useful for piping to tools like ``cf-ci parse`` that expect clean output.
+
+``--format <FORMAT>``
+~~~~~~~~~~~~~~~~~~~~~
+
+Output format for stdout. Values:
+
+- ``log`` (default): ``[TIMESTAMP LEVEL] message``
+
+- ``jsonl``: ``{"ts":"...","level":"INFO","msg":"..."}``
+
+The gzip file always uses the ``log`` format regardless of this setting.
+
+``-o, --output <PATH>``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Output file path. Defaults to ``{label}_{uuid}.log.gz`` in the current directory.
+
+Special values:
+
+- ``-``: skip file output entirely (stdout only)
+
+- Path not ending in ``.gz``: write plain text (no compression)
+
+``--split``
+~~~~~~~~~~~
+
+Write separate gzip files for stdout and stderr:
+
+- ``{label}_{uuid}_stdout.log.gz`` -- INFO and below
+
+- ``{label}_{uuid}_stderr.log.gz`` -- WARN and ERROR
+
+``--version``
+~~~~~~~~~~~~~
+
+Print version and exit.
+
+Serve mode options
+------------------
+
+Available when built with ``--features serve``.
+
+``--serve <ADDR>``
+~~~~~~~~~~~~~~~~~~
+
+Start in server mode, listening for capnp RPC connections.
+
+Example: ``--serve :5678``
+
+``--remote <ADDR>``
+~~~~~~~~~~~~~~~~~~~
+
+Stream logs to a remote bless server instead of (or in addition to) local files.
+
+Example: ``--remote :5678``
+
+``--local``
+~~~~~~~~~~~
+
+When used with ``--remote``, also write a local gzip file.
+
+Exit codes
+----------
+
+``bless`` passes through the exit code of the wrapped command. If the command
+exits with code 42, ``bless`` exits with code 42.
+
+If ``bless`` itself fails (e.g., cannot create log file), it exits with code 1
+and prints the error to stderr.

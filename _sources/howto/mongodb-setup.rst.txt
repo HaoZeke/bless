@@ -1,0 +1,50 @@
+=====================
+Store logs in MongoDB
+=====================
+
+    :Author: Rohit Goswami
+
+
+Overview
+--------
+
+``bless`` can store compressed log blobs in MongoDB alongside metadata (command,
+duration, timestamps, label, UUID).
+
+Prerequisites
+-------------
+
+A running MongoDB instance. Set the connection URI:
+
+.. code:: bash
+
+    export MONGODB_URI="mongodb://localhost:27017"
+
+Usage
+-----
+
+.. code:: bash
+
+    bless --use-mongodb --label nightly-build -- make test
+
+This:
+
+1. Runs the command with logging as usual
+
+2. Connects to MongoDB
+
+3. Stores the gzip blob + metadata in the ``local.commands`` collection
+
+Querying stored runs
+--------------------
+
+.. code:: bash
+
+    mongosh --eval 'db.commands.find({label: "nightly-build"}).sort({start_time: -1}).limit(5)'
+
+Filtering by MongoDB mode
+-------------------------
+
+When ``--use-mongodb`` is set, the gzip file only captures INFO and WARN levels
+(not TRACE). This reduces storage for production use. Stdout still shows all
+levels.
