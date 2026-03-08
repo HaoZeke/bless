@@ -3,9 +3,9 @@
 
 * Synopsis
 
-#+begin_src
+#+begin_example
 bless [OPTIONS] -- COMMAND [ARGS...]
-#+end_src
+#+end_example
 
 * Options
 
