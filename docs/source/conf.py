@@ -2,6 +2,7 @@ project = "bless"
 copyright = "2024--present, Rohit Goswami"
 author = "Rohit Goswami"
 release = "0.2.0"
+html_logo = "../../branding/logo/bless_logo.png"
 
 extensions = [
     "myst_parser",
@@ -24,6 +25,14 @@ html_theme_options = {
     "nav_links": [
         {"title": "rgoswami.me", "url": "https://rgoswami.me"},
     ],
+}
+
+html_context = {
+    "source_type": "github",
+    "source_user": "HaoZeke",
+    "source_repo": "bless",
+    "source_version": "main",
+    "source_docs_path": "/docs/source/",
 }
 
 myst_enable_extensions = [
