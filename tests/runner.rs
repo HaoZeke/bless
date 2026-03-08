@@ -1,76 +1,97 @@
 #[cfg(test)]
 mod tests {
     use bless::runner::run_command;
-    use tokio::task;
 
     #[tokio::test]
-    async fn test_successful_command() -> std::io::Result<()> {
-        let result = run_command("ls", &[]).await;
-        assert!(result.is_ok(), "Expected command to succeed, but it failed");
-        Ok(())
+    async fn test_successful_command() {
+        let result = run_command("echo", &["hello".into()]).await;
+        assert!(result.is_ok(), "Expected command to succeed");
+        let status = result.unwrap();
+        assert!(status.success());
     }
 
     #[tokio::test]
-    async fn test_failing_command() -> std::io::Result<()> {
-        let result = run_command("non_existent_command", &[]).await;
-        assert!(
-            result.is_err(),
-            "Expected command to fail, but it succeeded"
-        );
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn test_command_output_accuracy() -> std::io::Result<()> {
-        let result = task::spawn_blocking(|| {
-            let output = std::process::Command::new("echo")
-                .arg("Hello, World!")
-                .output()
-                .expect("Failed to execute command");
-            String::from_utf8(output.stdout).expect("Invalid UTF-8")
-        })
-        .await
-        .expect("Failed to spawn blocking task");
-
-        assert_eq!(
-            result.trim(),
-            "Hello, World!",
-            "The command output was not as expected"
-        );
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn test_command_with_stdout_and_stderr() -> std::io::Result<()> {
-        let result = task::spawn_blocking(|| {
-            let output = std::process::Command::new("bash")
-                .arg("-c")
-                .arg("echo out && echo err 1>&2")
-                .output()
-                .expect("Failed to execute command");
-            let stdout = String::from_utf8(output.stdout).expect("Invalid UTF-8");
-            let stderr = String::from_utf8(output.stderr).expect("Invalid UTF-8");
-            (stdout, stderr)
-        })
-        .await
-        .expect("Failed to spawn blocking task");
-
-        let (stdout, stderr) = result;
-        assert_eq!(stdout.trim(), "out", "The stdout was not as expected");
-        assert_eq!(stderr.trim(), "err", "The stderr was not as expected");
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn test_long_running_command() -> std::io::Result<()> {
-        // Using `sleep` command to simulate a long-running operation.
-        let result = run_command("sleep", &["1"]).await;
-
-        // Verify the command completed successfully.
+    async fn test_failing_command() {
+        let result = run_command("false", &[]).await;
         assert!(
             result.is_ok(),
-            "Expected sleep command to complete successfully"
+            "Command should return Ok with non-zero status"
         );
-        Ok(())
+        let status = result.unwrap();
+        assert!(!status.success());
+    }
+
+    #[tokio::test]
+    async fn test_nonexistent_command() {
+        let result = run_command("nonexistent_command_xyz", &[]).await;
+        assert!(result.is_err(), "Expected error for nonexistent command");
+    }
+
+    #[tokio::test]
+    async fn test_exit_code_passthrough() {
+        let result = run_command("bash", &["-c".into(), "exit 42".into()]).await;
+        assert!(result.is_ok());
+        let status = result.unwrap();
+        assert_eq!(status.code(), Some(42));
+    }
+
+    #[tokio::test]
+    async fn test_command_with_stdout_and_stderr() {
+        // run_command logs stdout as INFO and stderr as WARN via the log crate
+        // This test verifies the command completes successfully
+        let result = run_command("bash", &["-c".into(), "echo out && echo err 1>&2".into()]).await;
+        assert!(result.is_ok());
+        assert!(result.unwrap().success());
+    }
+
+    #[tokio::test]
+    async fn test_cli_parse_basic() {
+        use bless::cli::Cli;
+        use clap::Parser;
+
+        let cli = Cli::try_parse_from(["bless", "--label", "test", "--", "echo", "hi"]);
+        assert!(cli.is_ok());
+        let cli = cli.unwrap();
+        assert_eq!(cli.label, "test");
+        assert_eq!(cli.command, vec!["echo", "hi"]);
+        assert!(!cli.no_timestamp);
+        assert!(!cli.split);
+    }
+
+    #[tokio::test]
+    async fn test_cli_parse_all_flags() {
+        use bless::cli::Cli;
+        use clap::Parser;
+
+        let cli = Cli::try_parse_from([
+            "bless",
+            "--label",
+            "myrun",
+            "--no-timestamp",
+            "--format",
+            "jsonl",
+            "--split",
+            "-o",
+            "/tmp/out.log.gz",
+            "--",
+            "make",
+            "-j8",
+        ]);
+        assert!(cli.is_ok());
+        let cli = cli.unwrap();
+        assert_eq!(cli.label, "myrun");
+        assert!(cli.no_timestamp);
+        assert!(cli.split);
+        assert_eq!(cli.output, Some("/tmp/out.log.gz".into()));
+        assert_eq!(cli.command, vec!["make", "-j8"]);
+    }
+
+    #[tokio::test]
+    async fn test_cli_requires_command() {
+        use bless::cli::Cli;
+        use clap::Parser;
+
+        let cli = Cli::try_parse_from(["bless"]);
+        assert!(cli.is_err());
     }
 }

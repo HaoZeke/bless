@@ -1,7 +1,8 @@
 [package]
 name = "bless"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
+rust-version = "1.74"
 description = "CLI logging helper for repeated runs with metadata tracking."
 keywords = ["cli", "logging"]
 categories = ["development-tools", "command-line-utilities", "database", "asynchronous"]
@@ -11,14 +12,41 @@ license = "MIT"
 [dependencies]
 flate2 = "1.0"
 uuid = { version = "1", features = ["v4"] }
-clap = "3.0"
-wild = "2.2.1"
-tokio = {"version"="1.36.0", features=["rt-multi-thread", "macros"]}
-async-trait = "0.1.77"
-mongodb = "2.8.1"
-bson = {version="2.9.0", features = ["chrono-0_4"]}
-log = "0.4.21"
-fern = "0.6.2"
-humantime = "2.1.0"
-chrono = "0.4.38"
-serde = "1.0.204"
+clap = { version = "4", features = ["derive"] }
+tokio = { version = "1.36", features = ["rt-multi-thread", "macros", "process", "signal", "io-util"] }
+mongodb = "2.8"
+bson = { version = "2.9", features = ["chrono-0_4"] }
+log = "0.4"
+fern = "0.6"
+humantime = "2.1"
+chrono = "0.4"
+serde = "1.0"
+serde_json = "1.0"
+thiserror = "2"
+
+[features]
+default = []
+serve = ["dep:capnp", "dep:capnp-rpc", "dep:tokio-util", "dep:futures"]
+
+[dependencies.capnp]
+version = "0.20"
+optional = true
+
+[dependencies.capnp-rpc]
+version = "0.20"
+optional = true
+
+[dependencies.tokio-util]
+version = "0.7"
+features = ["compat"]
+optional = true
+
+[dependencies.futures]
+version = "0.3"
+optional = true
+
+[build-dependencies]
+capnpc = { version = "0.20", optional = true }
+
+[dev-dependencies]
+tempfile = "3"

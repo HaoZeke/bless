@@ -1,14 +1,12 @@
+use crate::error::BlessError;
 use mongodb::bson::serde_helpers::bson_datetime_as_rfc3339_string;
 use mongodb::bson::DateTime;
-use mongodb::{
-    bson::{doc, Binary, Document},
-    Client, Collection,
-};
+use mongodb::bson::{doc, Binary, Document};
+use mongodb::{Client, Collection};
 use serde::{Deserialize, Serialize};
 use std::fs::File;
-use std::io::Read;
+use std::io::Read as _;
 use std::path::Path;
-use tokio::io;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SaveGzipBlobParams<'a> {
@@ -29,13 +27,13 @@ pub struct MongoDBStorage {
 }
 
 impl MongoDBStorage {
-    pub async fn new(client: &Client, db_name: &str, collection_name: &str) -> io::Result<Self> {
+    pub async fn new(client: &Client, db_name: &str, collection_name: &str) -> Self {
         let db = client.database(db_name);
         let collection: Collection<Document> = db.collection(collection_name);
-        Ok(Self { collection })
+        Self { collection }
     }
 
-    pub async fn save_gzip_blob(&self, params: SaveGzipBlobParams<'_>) -> io::Result<()> {
+    pub async fn save_gzip_blob(&self, params: SaveGzipBlobParams<'_>) -> Result<(), BlessError> {
         let mut file = File::open(params.file_path)?;
         let mut buffer = Vec::new();
         file.read_to_end(&mut buffer)?;
@@ -51,10 +49,7 @@ impl MongoDBStorage {
             "gzip_blob": Binary { subtype: mongodb::bson::spec::BinarySubtype::Generic, bytes: buffer },
         };
 
-        self.collection
-            .insert_one(doc, None)
-            .await
-            .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
+        self.collection.insert_one(doc, None).await?;
 
         Ok(())
     }
