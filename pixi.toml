@@ -1,4 +1,4 @@
-[project]
+[workspace]
 name = "bless"
 version = "0.2.0"
 channels = ["conda-forge"]
