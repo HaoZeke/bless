@@ -22,14 +22,10 @@ jobs:
       - name: Build documentation
         run: pixi run -e docs docbld
 
-      - name: Add CNAME for custom domain
-        if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
-        run: cp docs/source/CNAME docs/build/html/CNAME
-
       - name: Deploy to GitHub Pages
         if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: docs/build/html
+          publish_dir: docs/build
           cname: bless.rgoswami.me
