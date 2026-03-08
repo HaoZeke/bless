@@ -11,12 +11,17 @@ rust = ">=1.74"
 python = ">=3.11"
 pip = "*"
 emacs = "*"
+sphinx = ">=7"
+myst-parser = "*"
+sphinx-sitemap = "*"
+
+[feature.docs.pypi-dependencies]
+shibuya = "*"
 
 [feature.docs.tasks]
 mkrst = { cmd = "cd docs && emacs --batch -l export.el", description = "Export orgmode to RST" }
-pip-docs = { cmd = "pip install sphinx shibuya myst-parser sphinx-sitemap", description = "Install Sphinx deps" }
-sphinxbld = { cmd = "sphinx-build -b html docs/source docs/build/html", depends-on = ["pip-docs"] }
-docbld = { cmd = "pixi run mkrst && pixi run sphinxbld", description = "Build full documentation" }
+sphinxbld = { cmd = "sphinx-build -b html docs/source docs/build/html" }
+docbld = { cmd = "cd docs && emacs --batch -l export.el && cd .. && sphinx-build -b html docs/source docs/build/html", description = "Build full documentation" }
 
 [feature.rpc.dependencies]
 capnproto = ">=1.0.2,<2"
