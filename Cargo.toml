@@ -26,7 +26,7 @@ thiserror = "2"
 
 [features]
 default = []
-serve = ["dep:capnp", "dep:capnp-rpc", "dep:tokio-util", "dep:futures"]
+serve = ["dep:capnp", "dep:capnp-rpc", "dep:tokio-util", "dep:futures", "dep:capnpc"]
 
 [dependencies.capnp]
 version = "0.20"
