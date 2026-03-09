@@ -23,7 +23,6 @@ them to a central server via Cap'n Proto RPC.
    :maxdepth: 2
    :caption: How-to guides
 
-   howto/cf-ci-integration
    howto/mongodb-setup
    howto/serve-mode
 

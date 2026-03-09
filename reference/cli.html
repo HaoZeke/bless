@@ -78,7 +78,6 @@ data-aria-dark="Switch to auto color mode">
 </ul>
 <p class="caption" role="heading" aria-level="3"><span class="caption-text">How-to guides</span></p>
 <ul>
-<li class="toctree-l1 _expand"><a class="reference internal" href="../howto/cf-ci-integration.html">Parse bless logs with cf-ci</a></li>
 <li class="toctree-l1 _expand"><a class="reference internal" href="../howto/mongodb-setup.html">Store logs in MongoDB</a></li>
 <li class="toctree-l1 _expand"><a class="reference internal" href="../howto/serve-mode.html">Stream logs to a central server</a></li>
 </ul>
@@ -240,7 +239,7 @@ data-aria-dark="Switch to auto color mode">
 <h3><code class="docutils literal notranslate"><span class="pre">--no-timestamp</span></code><a class="headerlink" href="#no-timestamp" title="Link to this heading">¶</a></h3>
 <p>Omit timestamps from stdout output. The gzip file still includes full
 timestamps.</p>
-<p>Useful for piping to tools like <code class="docutils literal notranslate"><span class="pre">cf-ci</span> <span class="pre">parse</span></code> that expect clean output.</p>
+<p>Useful for piping to downstream tools that expect clean output.</p>
 </section>
 <section id="format-format">
 <h3><code class="docutils literal notranslate"><span class="pre">--format</span> <span class="pre">&lt;FORMAT&gt;</span></code><a class="headerlink" href="#format-format" title="Link to this heading">¶</a></h3>

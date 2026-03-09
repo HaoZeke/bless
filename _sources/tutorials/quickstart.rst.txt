@@ -14,7 +14,7 @@ By the end of this tutorial you will have:
 
 - Read the compressed log output
 
-- Extracted errors using ``cf-ci``
+- Filtered the log output
 
 The final output looks like this:
 
@@ -60,14 +60,14 @@ Read the log
 
 Each line has a timestamp, level, and the original output.
 
-Extract errors
+Filter the log
 --------------
 
-If you have ``cf-ci`` installed:
+Extract warnings and errors with standard tools:
 
 .. code:: bash
 
-    cf-ci parse myproject_*.log.gz
+    zcat myproject_*.log.gz | grep -E '\b(WARN|ERROR)\b'
 
 Output options
 --------------
@@ -98,8 +98,6 @@ Clean output without timestamps:
 
 Next steps
 ----------
-
-- `Parse bless logs with cf-ci <../howto/cf-ci-integration.rst>`_
 
 - `Store logs in MongoDB <../howto/mongodb-setup.rst>`_
 
