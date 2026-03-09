@@ -7,7 +7,7 @@ By the end of this tutorial you will have:
 
 - Wrapped a build command with =bless=
 - Read the compressed log output
-- Extracted errors using =cf-ci=
+- Filtered the log output
 
 The final output looks like this:
 
@@ -50,12 +50,12 @@ zcat myproject_*.log.gz | head -20
 
 Each line has a timestamp, level, and the original output.
 
-* Extract errors
+* Filter the log
 
-If you have =cf-ci= installed:
+Extract warnings and errors with standard tools:
 
 #+begin_src bash
-cf-ci parse myproject_*.log.gz
+zcat myproject_*.log.gz | grep -E '\b(WARN|ERROR)\b'
 #+end_src
 
 * Output options
@@ -86,6 +86,5 @@ bless --no-timestamp -- make
 
 * Next steps
 
-- [[file:../howto/cf-ci-integration.org][Parse bless logs with cf-ci]]
 - [[file:../howto/mongodb-setup.org][Store logs in MongoDB]]
 - [[file:../howto/serve-mode.org][Stream logs to a central server]]

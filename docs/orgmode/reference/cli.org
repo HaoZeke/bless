@@ -26,7 +26,7 @@ Requires =MONGODB_URI= environment variable.
 Omit timestamps from stdout output. The gzip file still includes full
 timestamps.
 
-Useful for piping to tools like =cf-ci parse= that expect clean output.
+Useful for piping to downstream tools that expect clean output.
 
 ** =--format <FORMAT>=
 
