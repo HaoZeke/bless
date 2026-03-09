@@ -22,18 +22,20 @@
   <meta property="og:url" content="https://bless.rgoswami.me/changelog.html"/>
   <meta property="og:title" content="Changelog"/>
     <meta name="twitter:card" content="summary"/>
-  <!-- Plausible injection -->
+  <!-- Umami injection -->
 <script
   defer
-  data-domain="bless.rgoswami.me"
-  src="https://analytics.turtletech.us/js/script.outbound-links.js"
+  data-website-id="f2b1113e-1700-40d5-861d-5aaf36f63b2e"
+  src="https://analytics.turtletech.us/script.js"
 ></script>
 <script>
-  window.plausible =
-    window.plausible ||
-    function () {
-      (window.plausible.q = window.plausible.q || []).push(arguments);
-    };
+  window.umami = window.umami || { track: function () {} };
+  document.addEventListener("click", function (e) {
+    var link = e.target.closest("a");
+    if (link && link.hostname !== location.hostname) {
+      umami.track("Outbound Link", { url: link.href });
+    }
+  });
 </script></head>
 <body><div class="sy-head">
   <div class="sy-head-blur"></div>
