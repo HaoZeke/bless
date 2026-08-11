@@ -6,7 +6,6 @@ use bless::runner::{exit_code_from_status, run_command};
 use bless::storage_backends::mongodb::{MongoDBStorage, SaveGzipBlobParams};
 use clap::Parser;
 use log::{error, trace};
-use std::path::Path;
 use std::process::{ExitCode, ExitStatus};
 use uuid::Uuid;
 
@@ -36,6 +35,11 @@ async fn run(cli: Cli) -> Result<ExitStatus, BlessError> {
     };
 
     let handles = setup_logger(&logger_config)?;
+    let persist_files = if cli.use_mongodb {
+        Some(handles.require_gzip_files()?)
+    } else {
+        None
+    };
 
     let (command, args) = cli.command.split_first().expect("clap requires at least 1");
 
@@ -83,31 +87,30 @@ async fn run(cli: Cli) -> Result<ExitStatus, BlessError> {
 
     handles.finish_all()?;
 
-    if cli.use_mongodb {
+    if let Some(files) = persist_files {
         let client = setup_mongodb().await?;
         list_databases(&client).await?;
         let mongodb_storage = MongoDBStorage::new(&client, "local", "commands").await;
+        let args_joined = args.join(" ");
 
-        let filename = cli
-            .output
-            .clone()
-            .unwrap_or_else(|| format!("{}_{}.log.gz", cli.label, run_uuid));
-        let file_path = Path::new(&filename);
-
-        let params = SaveGzipBlobParams {
-            cmd: command,
-            args: &args.join(" "),
-            label: &cli.label,
-            duration: &duration,
-            uuid: &run_uuid,
-            file_path,
-            start_time: start_time.into(),
-            end_time: end_time.into(),
-        };
-
-        mongodb_storage
-            .save_gzip_blob(params, cli.force_gridfs)
-            .await?;
+        // One document per opened gzip. Combined runs insert once;
+        // --split inserts stdout then stderr, tagged with stream=.
+        for file in &files {
+            let params = SaveGzipBlobParams {
+                cmd: command,
+                args: &args_joined,
+                label: &cli.label,
+                duration: &duration,
+                uuid: &run_uuid,
+                file_path: &file.path,
+                stream: file.stream,
+                start_time: start_time.into(),
+                end_time: end_time.into(),
+            };
+            mongodb_storage
+                .save_gzip_blob(params, cli.force_gridfs)
+                .await?;
+        }
     }
 
     Ok(status)

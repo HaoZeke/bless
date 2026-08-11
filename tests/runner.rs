@@ -197,4 +197,18 @@ mod tests {
         let cli = Cli::try_parse_from(["bless"]);
         assert!(cli.is_err());
     }
+
+    #[tokio::test]
+    async fn test_cli_parses_mongodb_with_dash_output() {
+        use bless::cli::Cli;
+        use clap::Parser;
+
+        // Clap accepts the combination; persist rejects it as BlessError::Config
+        // because -o - opens no gzip to upload.
+        let cli = Cli::try_parse_from(["bless", "--use-mongodb", "-o", "-", "--", "echo", "hi"]);
+        assert!(cli.is_ok());
+        let cli = cli.unwrap();
+        assert!(cli.use_mongodb);
+        assert_eq!(cli.output.as_deref(), Some("-"));
+    }
 }

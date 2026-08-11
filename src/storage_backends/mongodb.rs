@@ -16,6 +16,11 @@ pub struct SaveGzipBlobParams<'a> {
     pub duration: &'a str,
     pub uuid: &'a str,
     pub file_path: &'a Path,
+    /// Combined gzip when `None`; `"stdout"` / `"stderr"` when `--split`.
+    ///
+    /// Split runs persist one document per stream (`insert_one` twice),
+    /// tagged with this field so both blobs share `run_uuid`.
+    pub stream: Option<&'a str>,
     pub start_time: DateTime,
     pub end_time: DateTime,
 }
@@ -56,6 +61,9 @@ impl MongoDBStorage {
             "end_time": params.end_time,
             "size_bytes": file_size as i64,
         };
+        if let Some(stream) = params.stream {
+            doc.insert("stream", stream);
+        }
 
         match kind {
             BlobStorageKind::GridFs => {
