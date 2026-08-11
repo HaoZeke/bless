@@ -27,8 +27,14 @@ impl GzipLogWrapper {
         &self.path
     }
 
+    fn lock_encoder(&self) -> std::sync::MutexGuard<'_, Option<GzEncoder<File>>> {
+        self.encoder
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+
     pub fn finish(&self) -> io::Result<()> {
-        let mut encoder_lock = self.encoder.lock().expect("encoder mutex poisoned");
+        let mut encoder_lock = self.lock_encoder();
         if let Some(encoder) = encoder_lock.take() {
             encoder.finish()?;
         }
@@ -43,7 +49,7 @@ impl Log for GzipLogWrapper {
 
     fn log(&self, record: &Record) {
         if self.enabled(record.metadata()) {
-            let mut encoder_lock = self.encoder.lock().expect("encoder mutex poisoned");
+            let mut encoder_lock = self.lock_encoder();
             if let Some(ref mut encoder) = *encoder_lock {
                 let _ = writeln!(
                     encoder,
@@ -57,7 +63,7 @@ impl Log for GzipLogWrapper {
     }
 
     fn flush(&self) {
-        let mut encoder_lock = self.encoder.lock().expect("encoder mutex poisoned");
+        let mut encoder_lock = self.lock_encoder();
         if let Some(ref mut encoder) = *encoder_lock {
             let _ = encoder.flush();
         }
@@ -116,5 +122,32 @@ mod tests {
         assert!(ts.contains('T'), "rfc3339 timestamp: {ts}");
         assert_eq!(level, "INFO");
         assert_eq!(msg, "hello-gzip");
+    }
+
+    fn poison_encoder(wrapper: &GzipLogWrapper) {
+        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            let _guard = wrapper.encoder.lock().unwrap();
+            panic!("poison encoder mutex");
+        }));
+        assert!(wrapper.encoder.lock().is_err());
+    }
+
+    #[test]
+    fn log_and_flush_recover_from_poison() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("poison.log.gz");
+        let wrapper = GzipLogWrapper::new(path.to_str().unwrap()).unwrap();
+        poison_encoder(&wrapper);
+        wrapper.log(
+            &Record::builder()
+                .args(format_args!("after poison"))
+                .level(Level::Info)
+                .target("bless")
+                .build(),
+        );
+        wrapper.flush();
+        wrapper.finish().unwrap();
+        assert!(path.exists());
+        assert!(path.metadata().unwrap().len() > 0);
     }
 }
