@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file. See [conven
 - - -
 ## Unreleased
 #### Bugfixes
+- `--serve :port` binds `127.0.0.1`, not `0.0.0.0`
+- Sanitize session label/uuid; finish the gzip and evict the session on close
 - Drop unused BlessError::CommandFailed; command failures are exit codes, not errors
 - Print a bless error's source when Display does not already include it
 - Recover gzip log and flush from a poisoned encoder mutex instead of panicking
@@ -17,6 +19,8 @@ All notable changes to this project will be documented in this file. See [conven
 - Persist to `bless.commands` by default; `--db`/`--collection` or `MONGODB_DB`/`MONGODB_COLLECTION` override
 - Do not list all databases on persist
 #### Enhancements
+- `--serve ADDR` runs the server without a dummy command
+- `--remote ADDR` streams logs via capnp; `--local` keeps a gzip
 - Unique compound index on `(run_uuid, stream)` and non-unique index on `(label, start_time)` after connect
 - get_db_gzip.py downloads GridFS blobs when storage is gridfs or gzip_blob_id is set
 #### Documentation

@@ -11,4 +11,7 @@ pub enum BlessError {
 
     #[error("{0}")]
     Config(String),
+
+    #[error("RPC error: {0}")]
+    Rpc(String),
 }

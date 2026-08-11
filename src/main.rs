@@ -1,19 +1,19 @@
 use bless::cli::Cli;
 use bless::db::setup_mongodb;
 use bless::error::BlessError;
-use bless::logger::{setup_logger, LoggerConfig};
+use bless::logger::{setup_logger_with_extra, LoggerConfig};
 use bless::runner::{exit_code_from_status, run_command};
 use bless::storage_backends::mongodb::{MongoDBStorage, SaveGzipBlobParams};
 use clap::Parser;
 use log::{error, trace};
 use std::error::Error;
-use std::process::{ExitCode, ExitStatus};
+use std::process::ExitCode;
 use uuid::Uuid;
 
 fn main() -> ExitCode {
     let cli = Cli::parse();
     match run(cli) {
-        Ok(status) => ExitCode::from(exit_code_from_status(status)),
+        Ok(code) => code,
         Err(e) => {
             eprintln!("bless: {e}");
             if let Some(source) = e.source() {
@@ -28,8 +28,37 @@ fn main() -> ExitCode {
 }
 
 #[tokio::main]
-async fn run(cli: Cli) -> Result<ExitStatus, BlessError> {
+async fn run(cli: Cli) -> Result<ExitCode, BlessError> {
+    tokio::task::LocalSet::new().run_until(run_async(cli)).await
+}
+
+async fn run_async(cli: Cli) -> Result<ExitCode, BlessError> {
+    #[cfg(feature = "serve")]
+    if let Some(addr) = cli.serve.as_deref() {
+        bless::serve::run_server(addr).await?;
+        return Ok(ExitCode::SUCCESS);
+    }
+
     let run_uuid = Uuid::new_v4().to_string();
+
+    #[cfg(feature = "serve")]
+    let mut remote = match cli.remote.as_deref() {
+        Some(addr) => {
+            let command = cli.command.first().map(String::as_str).unwrap_or("");
+            let args = cli
+                .command
+                .get(1..)
+                .map(|a| a.join(" "))
+                .unwrap_or_default();
+            Some(
+                bless::rpc::client::RemoteSession::connect(
+                    addr, &cli.label, &run_uuid, command, &args,
+                )
+                .await?,
+            )
+        }
+        None => None,
+    };
 
     let logger_config = LoggerConfig {
         label: &cli.label,
@@ -37,18 +66,28 @@ async fn run(cli: Cli) -> Result<ExitStatus, BlessError> {
         use_mongodb: cli.use_mongodb,
         no_timestamp: cli.no_timestamp,
         format: &cli.format,
-        output: cli.output.as_deref(),
+        output: cli.gzip_output(),
         split: cli.split,
     };
 
-    let handles = setup_logger(&logger_config)?;
+    #[cfg(feature = "serve")]
+    let extra = remote
+        .as_ref()
+        .map(|session| Box::new(session.logger()) as Box<dyn log::Log>);
+    #[cfg(not(feature = "serve"))]
+    let extra = None;
+    let handles = setup_logger_with_extra(&logger_config, extra)?;
+
     let persist_files = if cli.use_mongodb {
         Some(handles.require_gzip_files()?)
     } else {
         None
     };
 
-    let (command, args) = cli.command.split_first().expect("clap requires at least 1");
+    let (command, args) = cli
+        .command
+        .split_first()
+        .ok_or_else(|| BlessError::Config("a command is required unless --serve is set".into()))?;
 
     let start_time = std::time::SystemTime::now();
     let status = match run_command(command, args).await {
@@ -65,10 +104,14 @@ async fn run(cli: Cli) -> Result<ExitStatus, BlessError> {
             error!("Failed to run command: {} {}", command, args.join(" "));
             error!("Error: {}", e);
             handles.finish_all()?;
+            #[cfg(feature = "serve")]
+            finish_remote(remote.take(), 1, "unknown").await;
             return Err(BlessError::Io(e));
         }
         Err(e) => {
             handles.finish_all()?;
+            #[cfg(feature = "serve")]
+            finish_remote(remote.take(), 1, "unknown").await;
             return Err(e);
         }
     };
@@ -93,6 +136,14 @@ async fn run(cli: Cli) -> Result<ExitStatus, BlessError> {
     };
 
     handles.finish_all()?;
+
+    #[cfg(feature = "serve")]
+    finish_remote(
+        remote.take(),
+        i32::from(exit_code_from_status(status)),
+        &duration,
+    )
+    .await;
 
     if let Some(files) = persist_files {
         let client = setup_mongodb().await?;
@@ -119,5 +170,18 @@ async fn run(cli: Cli) -> Result<ExitStatus, BlessError> {
         }
     }
 
-    Ok(status)
+    Ok(ExitCode::from(exit_code_from_status(status)))
+}
+
+#[cfg(feature = "serve")]
+async fn finish_remote(
+    remote: Option<bless::rpc::client::RemoteSession>,
+    exit_code: i32,
+    duration: &str,
+) {
+    if let Some(remote) = remote {
+        if let Err(e) = remote.finish(exit_code, duration).await {
+            error!("remote session close failed: {e}");
+        }
+    }
 }

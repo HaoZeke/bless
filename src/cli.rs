@@ -48,7 +48,7 @@ pub struct Cli {
 
     /// Start serve mode (capnp log aggregation server)
     #[cfg(feature = "serve")]
-    #[arg(long, value_name = "ADDR")]
+    #[arg(long, value_name = "ADDR", conflicts_with_all = ["remote", "use_mongodb"])]
     pub serve: Option<String>,
 
     /// Stream logs to a remote bless server
@@ -58,10 +58,30 @@ pub struct Cli {
 
     /// Also write local gzip when using --remote
     #[cfg(feature = "serve")]
-    #[arg(long)]
+    #[arg(long, requires = "remote")]
     pub local: bool,
 
     /// Command to run (after --)
+    #[cfg(feature = "serve")]
+    #[arg(required_unless_present = "serve", last = true, num_args = 1..)]
+    pub command: Vec<String>,
+
+    /// Command to run (after --)
+    #[cfg(not(feature = "serve"))]
     #[arg(required = true, last = true, num_args = 1..)]
     pub command: Vec<String>,
+}
+
+impl Cli {
+    /// Path handed to the gzip logger.
+    ///
+    /// `--remote` without `--local` and without `-o` skips the local gzip
+    /// (same as `-o -`). An explicit `-o` still writes that path.
+    pub fn gzip_output(&self) -> Option<&str> {
+        #[cfg(feature = "serve")]
+        if self.remote.is_some() && !self.local && self.output.is_none() {
+            return Some("-");
+        }
+        self.output.as_deref()
+    }
 }

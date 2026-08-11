@@ -30,7 +30,7 @@ libc = "0.2"
 
 [features]
 default = []
-serve = ["dep:capnp", "dep:capnp-rpc", "dep:futures", "dep:capnpc"]
+serve = ["dep:capnp", "dep:capnp-rpc", "dep:futures", "dep:capnpc", "tokio/net", "tokio/sync"]
 
 [dependencies.capnp]
 version = "0.20"

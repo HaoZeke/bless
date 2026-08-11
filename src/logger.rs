@@ -158,6 +158,30 @@ pub(crate) fn open_gzip_handles(config: &LoggerConfig) -> Result<LoggerHandles, 
 }
 
 pub fn setup_logger(config: &LoggerConfig) -> Result<LoggerHandles, BlessError> {
+    setup_logger_with_extra(config, None)
+}
+
+fn apply_dispatch(
+    dispatch: fern::Dispatch,
+    extra: Option<Box<dyn Log>>,
+) -> Result<(), BlessError> {
+    let dispatch = if let Some(extra) = extra {
+        dispatch.chain(
+            fern::Dispatch::new()
+                .chain(extra)
+                .level(log::LevelFilter::Trace),
+        )
+    } else {
+        dispatch
+    };
+    dispatch.apply()?;
+    Ok(())
+}
+
+pub fn setup_logger_with_extra(
+    config: &LoggerConfig,
+    extra: Option<Box<dyn Log>>,
+) -> Result<LoggerHandles, BlessError> {
     let no_timestamp = config.no_timestamp;
     let format = config.format.clone();
 
@@ -205,11 +229,13 @@ pub fn setup_logger(config: &LoggerConfig) -> Result<LoggerHandles, BlessError> 
             .chain(stderr_clone)
             .level(log::LevelFilter::Trace);
 
-        fern::Dispatch::new()
-            .chain(stdout_dispatch)
-            .chain(stdout_file_dispatch)
-            .chain(stderr_file_dispatch)
-            .apply()?;
+        apply_dispatch(
+            fern::Dispatch::new()
+                .chain(stdout_dispatch)
+                .chain(stdout_file_dispatch)
+                .chain(stderr_file_dispatch),
+            extra,
+        )?;
     } else if let Some(file_logger) = &handles.gzip_logger {
         let logger_clone = Box::new(file_logger.as_ref().clone()) as Box<dyn Log>;
 
@@ -222,18 +248,22 @@ pub fn setup_logger(config: &LoggerConfig) -> Result<LoggerHandles, BlessError> 
                 .filter(|metadata| matches!(metadata.level(), log::Level::Info | log::Level::Warn))
                 .chain(file_dispatch);
 
-            fern::Dispatch::new()
-                .chain(stdout_dispatch)
-                .chain(mongodb_dispatch)
-                .apply()?;
+            apply_dispatch(
+                fern::Dispatch::new()
+                    .chain(stdout_dispatch)
+                    .chain(mongodb_dispatch),
+                extra,
+            )?;
         } else {
-            fern::Dispatch::new()
-                .chain(stdout_dispatch)
-                .chain(file_dispatch)
-                .apply()?;
+            apply_dispatch(
+                fern::Dispatch::new()
+                    .chain(stdout_dispatch)
+                    .chain(file_dispatch),
+                extra,
+            )?;
         }
     } else {
-        fern::Dispatch::new().chain(stdout_dispatch).apply()?;
+        apply_dispatch(fern::Dispatch::new().chain(stdout_dispatch), extra)?;
     }
 
     log::trace!("Label: {} UUID: {}", config.label, config.uuid);

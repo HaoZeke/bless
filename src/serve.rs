@@ -1,3 +1,4 @@
+use crate::rpc::resolve_tcp_addr;
 use crate::rpc::server::BlessServerImpl;
 use capnp_rpc::twoparty::VatNetwork;
 use capnp_rpc::RpcSystem;
@@ -7,24 +8,30 @@ use tokio::net::TcpListener;
 use tokio_util::compat::TokioAsyncReadCompatExt;
 
 /// Run the bless serve mode, accepting capnp RPC connections.
+///
+/// `:port` binds `127.0.0.1:port`. One `BlessServerImpl` is shared across
+/// connections. Tasks are spawned on a `LocalSet` so `spawn_local` is safe.
 pub async fn run_server(addr: &str) -> Result<(), crate::error::BlessError> {
-    let data_dir = dirs_or_default();
+    tokio::task::LocalSet::new()
+        .run_until(run_server_inner(addr))
+        .await
+}
 
-    let addr = if addr.starts_with(':') {
-        format!("0.0.0.0{}", addr)
-    } else {
-        addr.to_string()
-    };
+async fn run_server_inner(addr: &str) -> Result<(), crate::error::BlessError> {
+    let data_dir = dirs_or_default();
+    let addr = resolve_tcp_addr(addr);
 
     let listener = TcpListener::bind(&addr).await?;
     eprintln!("[serve] listening on {addr}");
     eprintln!("[serve] data dir: {}", data_dir.display());
 
+    let server = BlessServerImpl::new(data_dir);
+
     loop {
         let (stream, remote) = listener.accept().await?;
         eprintln!("[serve] connection from {remote}");
 
-        let data_dir = data_dir.clone();
+        let server = server.clone();
         tokio::task::spawn_local(async move {
             let (reader, writer) = TokioAsyncReadCompatExt::compat(stream).split();
             let network = VatNetwork::new(
@@ -34,7 +41,6 @@ pub async fn run_server(addr: &str) -> Result<(), crate::error::BlessError> {
                 Default::default(),
             );
 
-            let server = BlessServerImpl::new(data_dir);
             let client: crate::bless_log_capnp::bless_server::Client =
                 capnp_rpc::new_client(server);
 

@@ -199,6 +199,104 @@ mod tests {
         assert!(cli.is_err());
     }
 
+    #[cfg(feature = "serve")]
+    #[tokio::test]
+    async fn test_cli_serve_without_command() {
+        use bless::cli::Cli;
+        use clap::Parser;
+
+        let cli = Cli::try_parse_from(["bless", "--serve", ":9000"]);
+        assert!(cli.is_ok());
+        let cli = cli.unwrap();
+        assert_eq!(cli.serve.as_deref(), Some(":9000"));
+        assert!(cli.command.is_empty());
+        assert!(cli.remote.is_none());
+    }
+
+    #[cfg(feature = "serve")]
+    #[tokio::test]
+    async fn test_cli_serve_conflicts_with_remote() {
+        use bless::cli::Cli;
+        use clap::Parser;
+
+        let cli = Cli::try_parse_from([
+            "bless", "--serve", ":9000", "--remote", ":9001", "--", "true",
+        ]);
+        assert!(cli.is_err());
+    }
+
+    #[cfg(feature = "serve")]
+    #[tokio::test]
+    async fn test_cli_serve_conflicts_with_mongodb() {
+        use bless::cli::Cli;
+        use clap::Parser;
+
+        let cli = Cli::try_parse_from(["bless", "--serve", ":9000", "--use-mongodb"]);
+        assert!(cli.is_err());
+    }
+
+    #[cfg(feature = "serve")]
+    #[tokio::test]
+    async fn test_cli_local_requires_remote() {
+        use bless::cli::Cli;
+        use clap::Parser;
+
+        let cli = Cli::try_parse_from(["bless", "--local", "--", "true"]);
+        assert!(cli.is_err());
+    }
+
+    #[cfg(feature = "serve")]
+    #[tokio::test]
+    async fn test_cli_remote_requires_command() {
+        use bless::cli::Cli;
+        use clap::Parser;
+
+        let cli = Cli::try_parse_from(["bless", "--remote", ":9000"]);
+        assert!(cli.is_err());
+
+        let cli = Cli::try_parse_from(["bless", "--remote", ":9000", "--", "echo", "hi"]);
+        assert!(cli.is_ok());
+        let cli = cli.unwrap();
+        assert_eq!(cli.remote.as_deref(), Some(":9000"));
+        assert_eq!(cli.command, vec!["echo", "hi"]);
+        assert!(!cli.local);
+    }
+
+    #[cfg(feature = "serve")]
+    #[tokio::test]
+    async fn test_cli_remote_without_local_skips_default_gzip() {
+        use bless::cli::Cli;
+        use clap::Parser;
+
+        let cli = Cli::try_parse_from(["bless", "--remote", ":9", "--", "true"]).unwrap();
+        assert_eq!(cli.gzip_output(), Some("-"));
+        assert!(cli.output.is_none());
+    }
+
+    #[cfg(feature = "serve")]
+    #[tokio::test]
+    async fn test_cli_remote_with_local_uses_default_gzip() {
+        use bless::cli::Cli;
+        use clap::Parser;
+
+        let cli =
+            Cli::try_parse_from(["bless", "--remote", ":9", "--local", "--", "true"]).unwrap();
+        assert_eq!(cli.gzip_output(), None);
+        assert!(cli.local);
+    }
+
+    #[cfg(feature = "serve")]
+    #[tokio::test]
+    async fn test_cli_remote_with_dash_o_keeps_path() {
+        use bless::cli::Cli;
+        use clap::Parser;
+
+        let cli =
+            Cli::try_parse_from(["bless", "--remote", ":9", "-o", "x.gz", "--", "true"]).unwrap();
+        assert_eq!(cli.gzip_output(), Some("x.gz"));
+        assert!(!cli.local);
+    }
+
     #[tokio::test]
     async fn test_cli_parses_mongodb_with_dash_output() {
         use bless::cli::Cli;
@@ -218,14 +316,7 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         let out = dir.path().join("run.log.gz");
         let status = std::process::Command::new(env!("CARGO_BIN_EXE_bless"))
-            .args([
-                "-o",
-                out.to_str().unwrap(),
-                "--",
-                "bash",
-                "-c",
-                "exit 42",
-            ])
+            .args(["-o", out.to_str().unwrap(), "--", "bash", "-c", "exit 42"])
             .status()
             .expect("spawn bless");
         assert_eq!(status.code(), Some(42));
