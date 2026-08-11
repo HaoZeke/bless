@@ -57,6 +57,12 @@ jobs:
       - name: Test serve
         run: cargo test --locked --features serve
 
+      - name: Clippy mongodb,serve
+        run: cargo clippy --locked --features mongodb,serve -- -D warnings
+
+      - name: Test mongodb,serve
+        run: cargo test --locked --features mongodb,serve
+
   msrv:
     runs-on: ubuntu-latest
     steps:
@@ -77,3 +83,6 @@ jobs:
 
       - name: MSRV check mongodb
         run: cargo check --locked --features mongodb
+
+      - name: MSRV check mongodb,serve
+        run: cargo check --locked --features mongodb,serve
