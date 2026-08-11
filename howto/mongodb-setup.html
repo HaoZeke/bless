@@ -110,6 +110,8 @@ data-aria-dark="Switch to auto color mode">
 <li><a class="reference internal" href="#usage">Usage</a></li>
 <li><a class="reference internal" href="#querying-stored-runs">Querying stored runs</a></li>
 <li><a class="reference internal" href="#filtering-by-mongodb-mode">Filtering by MongoDB mode</a></li>
+<li><a class="reference internal" href="#how-the-blob-is-stored">How the blob is stored</a></li>
+<li><a class="reference internal" href="#extracting-a-stored-log">Extracting a stored log</a></li>
 </ul>
 </div><a class="js-repo-stats repo-stats flex items-center" href="https://github.com/HaoZeke/bless"
   data-type="github" data-user="HaoZeke" data-repo="bless">
@@ -242,6 +244,26 @@ duration, timestamps, label, UUID).</p>
 <p>When <code class="docutils literal notranslate"><span class="pre">--use-mongodb</span></code> is set, the gzip file only captures INFO and WARN levels
 (not TRACE). This reduces storage for production use. Stdout still shows all
 levels.</p>
+</section>
+<section id="how-the-blob-is-stored">
+<h2>How the blob is stored<a class="headerlink" href="#how-the-blob-is-stored" title="Link to this heading">¶</a></h2>
+<p>Logs at or under 15 MiB are embedded as BSON Binary (<code class="docutils literal notranslate"><span class="pre">~gzip_blob</span></code>) on the
+metadata document. Larger logs, or any log when <code class="docutils literal notranslate"><span class="pre">--force-gridfs</span></code> is set, are
+streamed into GridFS. The metadata document then stores <code class="docutils literal notranslate"><span class="pre">storage:</span> <span class="pre">&quot;gridfs&quot;</span></code>
+and <code class="docutils literal notranslate"><span class="pre">gzip_blob_id</span></code> instead of the bytes.</p>
+</section>
+<section id="extracting-a-stored-log">
+<h2>Extracting a stored log<a class="headerlink" href="#extracting-a-stored-log" title="Link to this heading">¶</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span data-line="1">python<span class="w"> </span>scripts/get_db_gzip.py<span class="w"> </span><span class="se">\</span>
+</span><span data-line="2"><span class="w">  </span>--db-name<span class="w"> </span><span class="nb">local</span><span class="w"> </span><span class="se">\</span>
+</span><span data-line="3"><span class="w">  </span>--collection-name<span class="w"> </span>commands<span class="w"> </span><span class="se">\</span>
+</span><span data-line="4"><span class="w">  </span>--query-field<span class="w"> </span>label<span class="w"> </span><span class="se">\</span>
+</span><span data-line="5"><span class="w">  </span>--query-value<span class="w"> </span>nightly-build<span class="w"> </span><span class="se">\</span>
+</span><span data-line="6"><span class="w">  </span>--output-file<span class="w"> </span>nightly-build.log.gz
+</span></pre></div>
+</div>
+<p>The helper follows <code class="docutils literal notranslate"><span class="pre">storage</span></code> / <code class="docutils literal notranslate"><span class="pre">gzip_blob_id</span></code> to GridFS and otherwise reads
+the embedded <code class="docutils literal notranslate"><span class="pre">gzip_blob</span></code>.</p>
 </section>
 </section>
 

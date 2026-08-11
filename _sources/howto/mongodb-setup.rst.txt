@@ -48,3 +48,26 @@ Filtering by MongoDB mode
 When ``--use-mongodb`` is set, the gzip file only captures INFO and WARN levels
 (not TRACE). This reduces storage for production use. Stdout still shows all
 levels.
+
+How the blob is stored
+----------------------
+
+Logs at or under 15 MiB are embedded as BSON Binary (``~gzip_blob``) on the
+metadata document. Larger logs, or any log when ``--force-gridfs`` is set, are
+streamed into GridFS. The metadata document then stores ``storage: "gridfs"``
+and ``gzip_blob_id`` instead of the bytes.
+
+Extracting a stored log
+-----------------------
+
+.. code:: bash
+
+    python scripts/get_db_gzip.py \
+      --db-name local \
+      --collection-name commands \
+      --query-field label \
+      --query-value nightly-build \
+      --output-file nightly-build.log.gz
+
+The helper follows ``storage`` / ``gzip_blob_id`` to GridFS and otherwise reads
+the embedded ``gzip_blob``.
