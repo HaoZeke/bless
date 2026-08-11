@@ -239,6 +239,10 @@ data-aria-dark="Switch to auto color mode">
 <h4>Bugfixes<a class="headerlink" href="#bugfixes" title="Link to this heading">¶</a></h4>
 <ul class="simple">
 <li><p>Stream GridFS uploads from disk instead of buffering the gzip in memory</p></li>
+<li><p>Split gzip names insert <code class="docutils literal notranslate"><span class="pre">_stdout</span></code>/<code class="docutils literal notranslate"><span class="pre">_stderr</span></code> before the extension so <code class="docutils literal notranslate"><span class="pre">-o</span> <span class="pre">build_log.gz</span></code> no longer collapses both streams</p></li>
+<li><p>Stdout gzip keeps Info and Trace only; Warn and Error go to the stderr gzip</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-o</span> <span class="pre">-</span></code> writes no gzip files, with or without <code class="docutils literal notranslate"><span class="pre">--split</span></code></p></li>
+<li><p>Start TRACE (label/uuid) is emitted from setup_logger on every logging path</p></li>
 </ul>
 </section>
 <section id="enhancements">

@@ -273,9 +273,12 @@ timestamps.</p>
 <h3><code class="docutils literal notranslate"><span class="pre">--split</span></code><a class="headerlink" href="#split" title="Link to this heading">¶</a></h3>
 <p>Write separate gzip files for stdout and stderr:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">{label}_{uuid}_stdout.log.gz</span></code> – INFO and below</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">{label}_{uuid}_stdout.log.gz</span></code> – INFO and TRACE</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">{label}_{uuid}_stderr.log.gz</span></code> – WARN and ERROR</p></li>
 </ul>
+<p><code class="docutils literal notranslate"><span class="pre">--split</span></code> is ignored when <code class="docutils literal notranslate"><span class="pre">-o</span> <span class="pre">-</span></code> (stdout only, no gzip files). A custom
+<code class="docutils literal notranslate"><span class="pre">-o</span></code> path inserts <code class="docutils literal notranslate"><span class="pre">_stdout</span></code> / <code class="docutils literal notranslate"><span class="pre">_stderr</span></code> before the extension
+(<code class="docutils literal notranslate"><span class="pre">build_log.gz</span></code> becomes <code class="docutils literal notranslate"><span class="pre">build_log_stdout.log.gz</span></code>).</p>
 </section>
 <section id="version">
 <h3><code class="docutils literal notranslate"><span class="pre">--version</span></code><a class="headerlink" href="#version" title="Link to this heading">¶</a></h3>

@@ -72,9 +72,13 @@ Special values:
 
 Write separate gzip files for stdout and stderr:
 
-- ``{label}_{uuid}_stdout.log.gz`` -- INFO and below
+- ``{label}_{uuid}_stdout.log.gz`` -- INFO and TRACE
 
 - ``{label}_{uuid}_stderr.log.gz`` -- WARN and ERROR
+
+``--split`` is ignored when ``-o -`` (stdout only, no gzip files). A custom
+``-o`` path inserts ``_stdout`` / ``_stderr`` before the extension
+(``build_log.gz`` becomes ``build_log_stdout.log.gz``).
 
 ``--version``
 ~~~~~~~~~~~~~
