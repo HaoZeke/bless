@@ -3,8 +3,12 @@ All notable changes to this project will be documented in this file. See [conven
 
 - - -
 ## Unreleased
+#### Enhancements
+- `bless ls`, `bless show <id>`, and `bless fetch <id>` query local gzip runs; `--use-mongodb` queries `bless.commands`
 #### Bugfixes
 - Combined `--use-mongodb` gzip archives TRACE through ERROR; drop the Info|Warn-only filter
+#### Documentation
+- CLI reference and README cover the query subcommands
 #### CI
 - Clippy and test `--features mongodb,serve` on check-serve; MSRV cargo check `--features mongodb,serve`
 

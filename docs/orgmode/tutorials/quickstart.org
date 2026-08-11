@@ -42,6 +42,13 @@ bless --label myproject -- make -j8
 
 This creates =myproject_{uuid}.log.gz= in the current directory.
 
+List and inspect that run without wrapping another command:
+
+#+begin_src bash
+bless ls
+bless show <uuid-or-prefix>
+#+end_src
+
 * Read the log
 
 #+begin_src bash

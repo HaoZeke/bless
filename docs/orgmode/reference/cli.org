@@ -6,6 +6,9 @@
 #+begin_example
 bless [OPTIONS] -- COMMAND [ARGS...]
 bless --serve ADDR
+bless ls
+bless show <id>
+bless fetch <id> [-o PATH]
 #+end_example
 
 * Options
@@ -58,6 +61,45 @@ Write separate gzip files for stdout and stderr:
 ** =--version=
 
 Print version and exit.
+
+* Query subcommands
+
+These inspect existing runs. They do not require =--= or a wrapped
+command. =<id>= is a full =run_uuid= or a unique prefix. If the prefix
+matches more than one uuid, the command exits with an error.
+
+** =ls=
+
+List gzip files in the current directory whose names look like
+={label}_{uuid}.log.gz= or the split pair
+={label}_{uuid}_stdout.log.gz= / ={label}_{uuid}_stderr.log.gz=.
+
+Prints =uuid=, =label=, =stream= (or =-=), =path=, and =size=.
+
+With =--use-mongodb= (requires =--features mongodb=), lists documents
+in =bless.commands= (or =--db= / =--collection=) and prints
+=run_uuid=, =label=, =stream=, =storage=, =size_bytes=, and
+=start_time=.
+
+** =show <id>=
+
+Print the =ls= fields for matching files, plus the file mtime. Mongo
+=show= prints the Mongo =ls= columns for the matching documents.
+
+** =fetch <id>=
+
+Copy the matching gzip.
+
+- Default destination: ={uuid}.log.gz=
+- Split run (two matches): ={uuid}_stdout.log.gz= and
+  ={uuid}_stderr.log.gz=
+- =-o PATH=: write that single file; error if the id matches two
+  streams
+- =-o -=: write gzip bytes to stdout; error if the id matches two
+  streams
+
+With =--use-mongodb=, downloads the stored =gzip_blob= or streams the
+GridFS object named by =gzip_blob_id=. Requires =MONGODB_URI=.
 
 * MongoDB options
 

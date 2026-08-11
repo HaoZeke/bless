@@ -56,6 +56,18 @@ non-unique index.
 * Querying stored runs
 
 #+begin_src bash
+MONGODB_URI="mongodb://localhost:27017/" bless ls --use-mongodb
+MONGODB_URI="mongodb://localhost:27017/" bless show <uuid-or-prefix> --use-mongodb
+MONGODB_URI="mongodb://localhost:27017/" bless fetch <uuid-or-prefix> --use-mongodb -o run.log.gz
+#+end_src
+
+=ls= prints =run_uuid=, =label=, =stream=, =storage=, =size_bytes=, and
+=start_time=. =fetch= writes the embedded =gzip_blob= or streams the
+GridFS object; it does not call =scripts/get_db_gzip.py=.
+
+Inspect with =mongosh= as well:
+
+#+begin_src bash
 mongosh --eval 'db.getSiblingDB("bless").commands.find({label: "nightly-build"}).sort({start_time: -1}).limit(5)'
 #+end_src
 

@@ -132,6 +132,32 @@ bless --label run --split -- ./simulation
 # Produces run_{uuid}_stdout.log.gz and run_{uuid}_stderr.log.gz
 ```
 
+## Query stored runs
+
+List gzip files in the current directory whose names look like
+`{label}_{uuid}.log.gz` or the split `*_stdout.log.gz` /
+`*_stderr.log.gz` pair. `<id>` is a full `run_uuid` or a unique prefix:
+
+```bash
+bless ls
+bless show 11111111
+bless fetch 11111111-1111-1111-1111-111111111111
+# writes {uuid}.log.gz; split runs write {uuid}_stdout.log.gz and
+# {uuid}_stderr.log.gz. -o PATH names one file; -o - writes gzip bytes
+# to stdout. Two matching streams with -o is an error.
+```
+
+With `--features mongodb`, the same subcommands take `--use-mongodb`
+(and `--db` / `--collection`) to list, show, and fetch documents in
+`bless.commands`. `fetch` writes the embedded `gzip_blob` or streams
+the GridFS object:
+
+```bash
+MONGODB_URI="mongodb://localhost:27017/" bless ls --use-mongodb
+MONGODB_URI="mongodb://localhost:27017/" bless show 11111111 --use-mongodb
+MONGODB_URI="mongodb://localhost:27017/" bless fetch 11111111 --use-mongodb -o run.log.gz
+```
+
 ## Serve mode (feature-gated)
 
 When built with `--features serve`, `--serve`, `--remote`, and `--local`
@@ -209,7 +235,13 @@ db.getCollectionNames().forEach(c=>db[c].drop())
 
 ### Extracting run output
 
-A helper script writes the stored gzip to a file. Documents with
+Prefer the built-in query command (requires `--features mongodb`):
+
+```bash
+MONGODB_URI="mongodb://localhost:27017/" bless fetch <uuid-or-prefix> --use-mongodb -o run.log.gz
+```
+
+A helper script also writes the stored gzip to a file. Documents with
 `storage=gridfs` or `gzip_blob_id` are streamed from GridFS; otherwise the
 embedded `gzip_blob` Binary is used:
 
