@@ -15,12 +15,12 @@ uuid = { version = "1", features = ["v4"] }
 clap = { version = "4", features = ["derive", "env"] }
 tokio = { version = "1.36", features = ["rt-multi-thread", "macros", "process", "signal", "io-util", "fs", "time"] }
 tokio-util = { version = "0.7", features = ["compat"] }
-mongodb = "2.8"
-bson = { version = "2.9", features = ["chrono-0_4"] }
+mongodb = { version = "2.8", optional = true }
+bson = { version = "2.9", optional = true, features = ["chrono-0_4"] }
 log = "0.4"
 fern = "0.6"
 humantime = "2.1"
-chrono = "0.4"
+chrono = { version = "0.4", optional = true }
 serde = "1.0"
 serde_json = "1.0"
 thiserror = "2"
@@ -30,6 +30,7 @@ libc = "0.2"
 
 [features]
 default = []
+mongodb = ["dep:mongodb", "dep:bson", "dep:chrono"]
 serve = ["dep:capnp", "dep:capnp-rpc", "dep:futures", "dep:capnpc", "tokio/net", "tokio/sync"]
 
 [dependencies.capnp]

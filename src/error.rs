@@ -3,6 +3,7 @@ pub enum BlessError {
     #[error("I/O error: {0}")]
     Io(#[from] std::io::Error),
 
+    #[cfg(feature = "mongodb")]
     #[error("MongoDB error: {0}")]
     Mongo(#[from] mongodb::error::Error),
 

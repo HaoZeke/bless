@@ -6,6 +6,7 @@ mod tests {
 
     static CAPTURED: Mutex<Vec<String>> = Mutex::new(Vec::new());
     static LOGGER: Once = Once::new();
+    #[cfg(feature = "mongodb")]
     static MONGO_DEST_ENV: Mutex<()> = Mutex::new(());
 
     struct CaptureLogger;
@@ -139,6 +140,7 @@ mod tests {
         assert_eq!(cli.command, vec!["echo", "hi"]);
         assert!(!cli.no_timestamp);
         assert!(!cli.split);
+        #[cfg(feature = "mongodb")]
         assert!(!cli.force_gridfs);
     }
 
@@ -170,6 +172,7 @@ mod tests {
         assert_eq!(cli.command, vec!["make", "-j8"]);
     }
 
+    #[cfg(feature = "mongodb")]
     #[tokio::test]
     async fn test_cli_parse_force_gridfs() {
         use bless::cli::Cli;
@@ -188,6 +191,18 @@ mod tests {
         assert!(cli.use_mongodb);
         assert!(cli.force_gridfs);
         assert_eq!(cli.command, vec!["echo", "hi"]);
+    }
+
+    #[cfg(not(feature = "mongodb"))]
+    #[tokio::test]
+    async fn test_cli_rejects_mongodb_flags_without_feature() {
+        use bless::cli::Cli;
+        use clap::Parser;
+
+        assert!(Cli::try_parse_from(["bless", "--use-mongodb", "--", "echo", "hi"]).is_err());
+        assert!(Cli::try_parse_from(["bless", "--force-gridfs", "--", "echo", "hi"]).is_err());
+        assert!(Cli::try_parse_from(["bless", "--db", "x", "--", "echo", "hi"]).is_err());
+        assert!(Cli::try_parse_from(["bless", "--collection", "x", "--", "echo", "hi"]).is_err());
     }
 
     #[tokio::test]
@@ -225,7 +240,7 @@ mod tests {
         assert!(cli.is_err());
     }
 
-    #[cfg(feature = "serve")]
+    #[cfg(all(feature = "serve", feature = "mongodb"))]
     #[tokio::test]
     async fn test_cli_serve_conflicts_with_mongodb() {
         use bless::cli::Cli;
@@ -297,6 +312,7 @@ mod tests {
         assert!(!cli.local);
     }
 
+    #[cfg(feature = "mongodb")]
     #[tokio::test]
     async fn test_cli_parses_mongodb_with_dash_output() {
         use bless::cli::Cli;
@@ -338,6 +354,7 @@ mod tests {
 
     // SAFETY: caller holds MONGO_DEST_ENV. env::{set,remove}_var is unsafe
     // on rustc 1.87+.
+    #[cfg(feature = "mongodb")]
     #[allow(unused_unsafe)]
     unsafe fn set_mongo_dest_env(db: Option<&str>, collection: Option<&str>) {
         unsafe {
@@ -352,6 +369,7 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "mongodb")]
     #[tokio::test]
     async fn test_cli_mongo_dest_defaults() {
         use bless::cli::Cli;
@@ -367,6 +385,7 @@ mod tests {
         assert_eq!(cli.collection, "commands");
     }
 
+    #[cfg(feature = "mongodb")]
     #[tokio::test]
     async fn test_cli_mongo_dest_flags() {
         use bless::cli::Cli;
@@ -396,6 +415,7 @@ mod tests {
         }
     }
 
+    #[cfg(feature = "mongodb")]
     #[tokio::test]
     async fn test_cli_mongo_dest_env() {
         use bless::cli::Cli;

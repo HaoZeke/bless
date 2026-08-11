@@ -5,6 +5,7 @@
 //! (under the 16 MiB document limit) or uploads via GridFS for larger logs.
 
 pub mod gzip;
+#[cfg(feature = "mongodb")]
 pub mod mongodb;
 
 /// Soft ceiling for embedding a gzip blob in a BSON document.

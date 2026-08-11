@@ -1,6 +1,7 @@
 #![warn(clippy::all)]
 
 pub mod cli;
+#[cfg(feature = "mongodb")]
 pub mod db;
 pub mod error;
 pub mod logger;

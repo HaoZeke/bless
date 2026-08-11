@@ -15,18 +15,22 @@ pub struct Cli {
     pub label: String,
 
     /// Store output in MongoDB
+    #[cfg(feature = "mongodb")]
     #[arg(long)]
     pub use_mongodb: bool,
 
     /// MongoDB database name
+    #[cfg(feature = "mongodb")]
     #[arg(long, default_value = "bless", env = "MONGODB_DB")]
     pub db: String,
 
     /// MongoDB collection name
+    #[cfg(feature = "mongodb")]
     #[arg(long, default_value = "commands", env = "MONGODB_COLLECTION")]
     pub collection: String,
 
     /// Force GridFS for the gzip blob even when it fits in a BSON document
+    #[cfg(feature = "mongodb")]
     #[arg(long)]
     pub force_gridfs: bool,
 
@@ -47,8 +51,13 @@ pub struct Cli {
     pub split: bool,
 
     /// Start serve mode (capnp log aggregation server)
-    #[cfg(feature = "serve")]
+    #[cfg(all(feature = "serve", feature = "mongodb"))]
     #[arg(long, value_name = "ADDR", conflicts_with_all = ["remote", "use_mongodb"])]
+    pub serve: Option<String>,
+
+    /// Start serve mode (capnp log aggregation server)
+    #[cfg(all(feature = "serve", not(feature = "mongodb")))]
+    #[arg(long, value_name = "ADDR", conflicts_with = "remote")]
     pub serve: Option<String>,
 
     /// Stream logs to a remote bless server

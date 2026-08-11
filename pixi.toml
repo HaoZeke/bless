@@ -29,8 +29,9 @@ capnproto = ">=1.0.2,<2"
 build-serve = { cmd = "cargo build --release --features serve", description = "Build with serve mode" }
 
 [feature.dev.tasks]
-check = { cmd = "cargo fmt --check && cargo clippy -- -D warnings && cargo test" }
+check = { cmd = "cargo fmt --check && cargo clippy -- -D warnings && cargo test && cargo clippy --features mongodb -- -D warnings && cargo test --features mongodb" }
 build = { cmd = "cargo build --release" }
+build-mongodb = { cmd = "cargo build --release --features mongodb", description = "Build with MongoDB persist" }
 
 [environments]
 docs = { features = ["docs"], solve-group = "default" }

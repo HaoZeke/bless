@@ -1,8 +1,10 @@
 use bless::cli::Cli;
+#[cfg(feature = "mongodb")]
 use bless::db::setup_mongodb;
 use bless::error::BlessError;
 use bless::logger::{setup_logger_with_extra, LoggerConfig};
 use bless::runner::{exit_code_from_status, run_command};
+#[cfg(feature = "mongodb")]
 use bless::storage_backends::mongodb::{MongoDBStorage, SaveGzipBlobParams};
 use clap::Parser;
 use log::{error, trace};
@@ -63,7 +65,10 @@ async fn run_async(cli: Cli) -> Result<ExitCode, BlessError> {
     let logger_config = LoggerConfig {
         label: &cli.label,
         uuid: &run_uuid,
+        #[cfg(feature = "mongodb")]
         use_mongodb: cli.use_mongodb,
+        #[cfg(not(feature = "mongodb"))]
+        use_mongodb: false,
         no_timestamp: cli.no_timestamp,
         format: &cli.format,
         output: cli.gzip_output(),
@@ -78,6 +83,7 @@ async fn run_async(cli: Cli) -> Result<ExitCode, BlessError> {
     let extra = None;
     let handles = setup_logger_with_extra(&logger_config, extra)?;
 
+    #[cfg(feature = "mongodb")]
     let persist_files = if cli.use_mongodb {
         Some(handles.require_gzip_files()?)
     } else {
@@ -117,9 +123,20 @@ async fn run_async(cli: Cli) -> Result<ExitCode, BlessError> {
     };
     let end_time = std::time::SystemTime::now();
 
+    #[cfg_attr(not(feature = "mongodb"), allow(unused_variables))]
     let duration = match end_time.duration_since(start_time) {
         Ok(d) => {
-            if !cli.use_mongodb {
+            let skip_duration_trace = {
+                #[cfg(feature = "mongodb")]
+                {
+                    cli.use_mongodb
+                }
+                #[cfg(not(feature = "mongodb"))]
+                {
+                    false
+                }
+            };
+            if !skip_duration_trace {
                 trace!(
                     "{} {} took {} to complete.",
                     command,
@@ -145,6 +162,7 @@ async fn run_async(cli: Cli) -> Result<ExitCode, BlessError> {
     )
     .await;
 
+    #[cfg(feature = "mongodb")]
     if let Some(files) = persist_files {
         let client = setup_mongodb().await?;
         let mongodb_storage = MongoDBStorage::new(&client, &cli.db, &cli.collection).await?;
