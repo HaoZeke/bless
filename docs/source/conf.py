@@ -1,7 +1,7 @@
 project = "bless"
 copyright = '2024--present, <a href="https://rgoswami.me">Rohit Goswami</a>'
 author = "Rohit Goswami"
-release = "0.2.0"
+release = "0.3.0"
 html_logo = "../../branding/logo/bless_logo.png"
 
 extensions = [
