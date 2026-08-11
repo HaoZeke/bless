@@ -3,19 +3,28 @@ use flate2::Compression;
 use log::{Level, Log, Metadata, Record};
 use std::fs::File;
 use std::io::{self, Write};
+use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
 
 pub struct GzipLogWrapper {
     encoder: Arc<Mutex<Option<GzEncoder<File>>>>,
+    path: PathBuf,
 }
 
 impl GzipLogWrapper {
     pub fn new(filename: &str) -> io::Result<Self> {
-        let out_file = File::create(filename)?;
+        let path = PathBuf::from(filename);
+        let out_file = File::create(&path)?;
         let encoder = GzEncoder::new(out_file, Compression::default());
         Ok(Self {
             encoder: Arc::new(Mutex::new(Some(encoder))),
+            path,
         })
+    }
+
+    /// Path passed to [`File::create`] when this wrapper was opened.
+    pub fn path(&self) -> &Path {
+        &self.path
     }
 
     pub fn finish(&self) -> io::Result<()> {
@@ -59,6 +68,7 @@ impl Clone for GzipLogWrapper {
     fn clone(&self) -> Self {
         GzipLogWrapper {
             encoder: Arc::clone(&self.encoder),
+            path: self.path.clone(),
         }
     }
 }

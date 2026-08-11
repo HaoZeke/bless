@@ -2,6 +2,7 @@ use crate::cli::OutputFormat;
 use crate::error::BlessError;
 use crate::storage_backends::gzip::GzipLogWrapper;
 use log::Log;
+use std::path::PathBuf;
 use std::time::SystemTime;
 
 pub struct LoggerConfig<'a> {
@@ -20,6 +21,16 @@ pub struct LoggerHandles {
     pub stderr_gzip: Option<Box<GzipLogWrapper>>,
 }
 
+/// One gzip file the logger opened.
+///
+/// Combined logs have `stream == None`. `--split` sets `stream` to
+/// `"stdout"` or `"stderr"` so Mongo persist can tag each document.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GzipFile {
+    pub path: PathBuf,
+    pub stream: Option<&'static str>,
+}
+
 impl LoggerHandles {
     pub fn finish_all(&self) -> Result<(), BlessError> {
         if let Some(ref logger) = self.gzip_logger {
@@ -32,6 +43,44 @@ impl LoggerHandles {
             logger.finish()?;
         }
         Ok(())
+    }
+
+    /// Gzip paths this logger created. Empty for `-o -`.
+    pub fn gzip_files(&self) -> Vec<GzipFile> {
+        let mut files = Vec::new();
+        if let Some(ref logger) = self.gzip_logger {
+            files.push(GzipFile {
+                path: logger.path().to_path_buf(),
+                stream: None,
+            });
+        }
+        if let Some(ref logger) = self.stdout_gzip {
+            files.push(GzipFile {
+                path: logger.path().to_path_buf(),
+                stream: Some("stdout"),
+            });
+        }
+        if let Some(ref logger) = self.stderr_gzip {
+            files.push(GzipFile {
+                path: logger.path().to_path_buf(),
+                stream: Some("stderr"),
+            });
+        }
+        files
+    }
+
+    /// Files `--use-mongodb` should persist after `finish_all`.
+    ///
+    /// `-o -` opens no gzip, so there is nothing to upload.
+    pub fn require_gzip_files(&self) -> Result<Vec<GzipFile>, BlessError> {
+        let files = self.gzip_files();
+        if files.is_empty() {
+            Err(BlessError::Config(
+                "--use-mongodb requires a gzip log file; -o - writes nothing to persist".into(),
+            ))
+        } else {
+            Ok(files)
+        }
     }
 }
 
@@ -282,9 +331,107 @@ mod tests {
         assert!(handles.gzip_logger.is_none());
         assert!(handles.stdout_gzip.is_none());
         assert!(handles.stderr_gzip.is_none());
+        assert!(handles.gzip_files().is_empty());
         assert!(!Path::new(&format!("lab_{uuid}.log.gz")).exists());
         assert!(!Path::new(&format!("lab_{uuid}_stdout.log.gz")).exists());
         assert!(!Path::new(&format!("lab_{uuid}_stderr.log.gz")).exists());
+    }
+
+    fn assert_files_match_targets(handles: &LoggerHandles, targets: &LogTargets) {
+        let files = handles.gzip_files();
+        match targets {
+            LogTargets::StdoutOnly => {
+                assert!(files.is_empty());
+            }
+            LogTargets::SingleFile(path) => {
+                assert_eq!(files.len(), 1);
+                assert_eq!(files[0].path, Path::new(path));
+                assert_eq!(files[0].stream, None);
+            }
+            LogTargets::Split { stdout, stderr } => {
+                assert_eq!(files.len(), 2);
+                assert_eq!(files[0].path, Path::new(stdout));
+                assert_eq!(files[0].stream, Some("stdout"));
+                assert_eq!(files[1].path, Path::new(stderr));
+                assert_eq!(files[1].stream, Some("stderr"));
+            }
+        }
+    }
+
+    #[test]
+    fn handle_paths_match_resolve_targets_stdout_only() {
+        let format = fmt();
+        let cfg = config(Some("-"), false, &format, "u1");
+        let targets = resolve_log_targets(&cfg);
+        assert_eq!(targets, LogTargets::StdoutOnly);
+        let handles = open_gzip_handles(&cfg).unwrap();
+        assert_files_match_targets(&handles, &targets);
+    }
+
+    #[test]
+    fn handle_paths_match_resolve_targets_single_file() {
+        let dir = tempfile::tempdir().unwrap();
+        let base = dir.path().join("run.log.gz");
+        let base_str = base.to_str().unwrap();
+        let format = fmt();
+        let cfg = config(Some(base_str), false, &format, "u1");
+        let targets = resolve_log_targets(&cfg);
+        let handles = open_gzip_handles(&cfg).unwrap();
+        assert_files_match_targets(&handles, &targets);
+        assert!(base.exists());
+        handles.finish_all().unwrap();
+    }
+
+    #[test]
+    fn default_single_uses_label_uuid_name() {
+        let format = fmt();
+        let cfg = config(None, false, &format, "abcd");
+        assert_eq!(
+            resolve_log_targets(&cfg),
+            LogTargets::SingleFile("lab_abcd.log.gz".into())
+        );
+    }
+
+    #[test]
+    fn handle_paths_match_resolve_targets_split() {
+        let dir = tempfile::tempdir().unwrap();
+        let base = dir.path().join("build_log.gz");
+        let base_str = base.to_str().unwrap();
+        let format = fmt();
+        let cfg = config(Some(base_str), true, &format, "u1");
+        let targets = resolve_log_targets(&cfg);
+        let handles = open_gzip_handles(&cfg).unwrap();
+        assert_files_match_targets(&handles, &targets);
+        handles.finish_all().unwrap();
+    }
+
+    #[test]
+    fn require_gzip_files_rejects_stdout_only() {
+        let format = fmt();
+        let cfg = config(Some("-"), false, &format, "u1");
+        let handles = open_gzip_handles(&cfg).unwrap();
+        let err = handles.require_gzip_files().unwrap_err();
+        match err {
+            BlessError::Config(msg) => {
+                assert!(msg.contains("--use-mongodb"));
+                assert!(msg.contains("-o -"));
+                assert!(!msg.contains("Path("));
+            }
+            other => panic!("expected Config, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn require_gzip_files_returns_opened_paths() {
+        let dir = tempfile::tempdir().unwrap();
+        let base = dir.path().join("keep.log.gz");
+        let base_str = base.to_str().unwrap();
+        let format = fmt();
+        let cfg = config(Some(base_str), false, &format, "u1");
+        let handles = open_gzip_handles(&cfg).unwrap();
+        let files = handles.require_gzip_files().unwrap();
+        assert_eq!(files, handles.gzip_files());
+        handles.finish_all().unwrap();
     }
 
     #[test]
