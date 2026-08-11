@@ -2,12 +2,13 @@ use crate::error::BlessError;
 use crate::storage_backends::{select_blob_storage, BlobStorageKind};
 use log::trace;
 use mongodb::bson::DateTime;
-use mongodb::bson::{doc, Binary, Document};
-use mongodb::options::IndexOptions;
+use mongodb::bson::{doc, Binary, Bson, Document};
+use mongodb::options::{FindOptions, IndexOptions};
 use mongodb::{Client, Collection, Database, IndexModel};
 use std::fs;
 use std::path::Path;
-use tokio_util::compat::TokioAsyncReadCompatExt;
+use tokio::io::{AsyncWrite, AsyncWriteExt};
+use tokio_util::compat::{FuturesAsyncReadCompatExt, TokioAsyncReadCompatExt};
 
 #[derive(Clone, Debug)]
 pub struct SaveGzipBlobParams<'a> {
@@ -122,5 +123,58 @@ impl MongoDBStorage {
 
         self.collection.insert_one(doc, None).await?;
         Ok(())
+    }
+
+    /// List metadata documents. Drops `gzip_blob` unless `include_blob` is set.
+    pub async fn find_docs(
+        &self,
+        filter: Document,
+        include_blob: bool,
+    ) -> Result<Vec<Document>, BlessError> {
+        let opts = if include_blob {
+            FindOptions::builder()
+                .sort(doc! { "start_time": -1, "stream": 1 })
+                .build()
+        } else {
+            FindOptions::builder()
+                .projection(doc! { "gzip_blob": 0 })
+                .sort(doc! { "start_time": -1, "stream": 1 })
+                .build()
+        };
+        let mut cursor = self.collection.find(filter, opts).await?;
+        let mut docs = Vec::new();
+        while cursor.advance().await? {
+            docs.push(cursor.deserialize_current()?);
+        }
+        Ok(docs)
+    }
+
+    /// Stream `gzip_blob` or the GridFS object named by `gzip_blob_id` to `dest`.
+    pub async fn write_gzip_blob<W>(&self, doc: &Document, mut dest: W) -> Result<(), BlessError>
+    where
+        W: AsyncWrite + Unpin,
+    {
+        let storage = doc.get_str("storage").unwrap_or("");
+        let use_gridfs = storage == "gridfs" || doc.contains_key("gzip_blob_id");
+        if use_gridfs {
+            let id = doc
+                .get("gzip_blob_id")
+                .cloned()
+                .ok_or_else(|| BlessError::Config("gzip_blob_id field is missing".into()))?;
+            let bucket = self.db.gridfs_bucket(None);
+            let stream = bucket.open_download_stream(id).await?;
+            let mut reader = stream.compat();
+            tokio::io::copy(&mut reader, &mut dest).await?;
+            dest.flush().await?;
+            return Ok(());
+        }
+        match doc.get("gzip_blob") {
+            Some(Bson::Binary(bin)) => {
+                dest.write_all(&bin.bytes).await?;
+                dest.flush().await?;
+                Ok(())
+            }
+            _ => Err(BlessError::Config("gzip_blob field is missing".into())),
+        }
     }
 }

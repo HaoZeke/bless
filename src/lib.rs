@@ -27,6 +27,7 @@ pub(crate) mod cli;
 pub(crate) mod db;
 pub mod error;
 pub(crate) mod logger;
+pub(crate) mod query;
 pub mod runner;
 pub(crate) mod storage_backends;
 
@@ -69,6 +70,17 @@ async fn run_parsed(cli: Cli) -> Result<ExitCode, BlessError> {
 }
 
 async fn run_async(cli: Cli) -> Result<ExitCode, BlessError> {
+    if let Some(ref query) = cli.query {
+        #[cfg(feature = "serve")]
+        if cli.serve.is_some() || cli.remote.is_some() {
+            return Err(BlessError::Config(
+                "--serve and --remote cannot be combined with ls, show, or fetch".into(),
+            ));
+        }
+        crate::query::run(query, &cli).await?;
+        return Ok(ExitCode::SUCCESS);
+    }
+
     #[cfg(feature = "serve")]
     if let Some(addr) = cli.serve.as_deref() {
         crate::serve::run_server(addr).await?;

@@ -1,4 +1,4 @@
-use clap::{Parser, ValueEnum};
+use clap::{Parser, Subcommand, ValueEnum};
 
 #[derive(Debug, Clone, ValueEnum, Default)]
 pub(crate) enum OutputFormat {
@@ -8,7 +8,12 @@ pub(crate) enum OutputFormat {
 }
 
 #[derive(Parser, Debug)]
-#[command(name = "bless", version = env!("CARGO_PKG_VERSION"), about = "Runs a command and logs output with metadata tracking")]
+#[command(
+    name = "bless",
+    version = env!("CARGO_PKG_VERSION"),
+    about = "Runs a command and logs output with metadata tracking",
+    subcommand_negates_reqs = true
+)]
 pub(crate) struct Cli {
     /// Label for the run
     #[arg(long, default_value = "default_label")]
@@ -16,17 +21,22 @@ pub(crate) struct Cli {
 
     /// Store output in MongoDB
     #[cfg(feature = "mongodb")]
-    #[arg(long)]
+    #[arg(long, global = true)]
     pub use_mongodb: bool,
 
     /// MongoDB database name
     #[cfg(feature = "mongodb")]
-    #[arg(long, default_value = "bless", env = "MONGODB_DB")]
+    #[arg(long, default_value = "bless", env = "MONGODB_DB", global = true)]
     pub db: String,
 
     /// MongoDB collection name
     #[cfg(feature = "mongodb")]
-    #[arg(long, default_value = "commands", env = "MONGODB_COLLECTION")]
+    #[arg(
+        long,
+        default_value = "commands",
+        env = "MONGODB_COLLECTION",
+        global = true
+    )]
     pub collection: String,
 
     /// Force GridFS for the gzip blob even when it fits in a BSON document
@@ -70,6 +80,10 @@ pub(crate) struct Cli {
     #[arg(long, requires = "remote")]
     pub local: bool,
 
+    /// Query stored runs (`ls`, `show`, `fetch`) instead of wrapping a command
+    #[command(subcommand)]
+    pub query: Option<QueryCommand>,
+
     /// Command to run (after --)
     #[cfg(feature = "serve")]
     #[arg(required_unless_present = "serve", last = true, num_args = 1..)]
@@ -79,6 +93,29 @@ pub(crate) struct Cli {
     #[cfg(not(feature = "serve"))]
     #[arg(required = true, last = true, num_args = 1..)]
     pub command: Vec<String>,
+}
+
+/// Inspect gzip runs in the current directory, or MongoDB with `--use-mongodb`.
+#[derive(Subcommand, Debug, Clone, PartialEq, Eq)]
+pub(crate) enum QueryCommand {
+    /// List gzip runs
+    Ls,
+    /// Show metadata for a run (full uuid or unique prefix)
+    Show {
+        /// Full `run_uuid` or a unique prefix
+        id: String,
+    },
+    /// Copy a run's gzip log to a file or stdout
+    Fetch {
+        /// Full `run_uuid` or a unique prefix
+        id: String,
+        /// Destination path. `-` writes gzip bytes to stdout.
+        ///
+        /// Default: `{uuid}.log.gz`, or `{uuid}_stdout.log.gz` and
+        /// `{uuid}_stderr.log.gz` when the run is split.
+        #[arg(short, long)]
+        output: Option<String>,
+    },
 }
 
 impl Cli {
@@ -97,7 +134,7 @@ impl Cli {
 
 #[cfg(test)]
 mod tests {
-    use super::Cli;
+    use super::{Cli, QueryCommand};
     use clap::Parser;
 
     #[cfg(feature = "mongodb")]
@@ -110,6 +147,7 @@ mod tests {
         let cli = cli.unwrap();
         assert_eq!(cli.label, "test");
         assert_eq!(cli.command, vec!["echo", "hi"]);
+        assert!(cli.query.is_none());
         assert!(!cli.no_timestamp);
         assert!(!cli.split);
         #[cfg(feature = "mongodb")]
@@ -172,6 +210,94 @@ mod tests {
     fn requires_command() {
         let cli = Cli::try_parse_from(["bless"]);
         assert!(cli.is_err());
+    }
+
+    #[test]
+    fn parse_ls_subcommand() {
+        let cli = Cli::try_parse_from(["bless", "ls"]);
+        assert!(cli.is_ok());
+        let cli = cli.unwrap();
+        assert_eq!(cli.query, Some(QueryCommand::Ls));
+        assert!(cli.command.is_empty());
+    }
+
+    #[test]
+    fn parse_wrap_after_double_dash() {
+        let cli = Cli::try_parse_from(["bless", "--", "echo"]).unwrap();
+        assert!(cli.query.is_none());
+        assert_eq!(cli.command, vec!["echo"]);
+    }
+
+    #[test]
+    fn double_dash_ls_is_wrap_not_subcommand() {
+        let cli = Cli::try_parse_from(["bless", "--", "ls"]).unwrap();
+        assert!(cli.query.is_none());
+        assert_eq!(cli.command, vec!["ls"]);
+    }
+
+    #[test]
+    fn parse_show_id() {
+        let cli = Cli::try_parse_from(["bless", "show", "abc"]).unwrap();
+        assert_eq!(cli.query, Some(QueryCommand::Show { id: "abc".into() }));
+        assert!(cli.command.is_empty());
+    }
+
+    #[test]
+    fn parse_fetch_output() {
+        let cli = Cli::try_parse_from(["bless", "fetch", "abc", "-o", "-"]).unwrap();
+        assert_eq!(
+            cli.query,
+            Some(QueryCommand::Fetch {
+                id: "abc".into(),
+                output: Some("-".into()),
+            })
+        );
+        assert!(cli.command.is_empty());
+    }
+
+    #[test]
+    fn show_requires_id() {
+        assert!(Cli::try_parse_from(["bless", "show"]).is_err());
+    }
+
+    #[cfg(feature = "mongodb")]
+    #[test]
+    fn parse_ls_use_mongodb_after_subcommand() {
+        let cli = Cli::try_parse_from(["bless", "ls", "--use-mongodb"]).unwrap();
+        assert!(cli.use_mongodb);
+        assert_eq!(cli.query, Some(QueryCommand::Ls));
+        assert!(cli.command.is_empty());
+    }
+
+    #[cfg(feature = "mongodb")]
+    #[test]
+    fn parse_ls_use_mongodb_before_subcommand() {
+        let cli = Cli::try_parse_from(["bless", "--use-mongodb", "ls"]).unwrap();
+        assert!(cli.use_mongodb);
+        assert_eq!(cli.query, Some(QueryCommand::Ls));
+    }
+
+    #[cfg(feature = "mongodb")]
+    #[test]
+    fn parse_ls_db_collection() {
+        let _guard = MONGO_DEST_ENV.lock().unwrap();
+        // SAFETY: exclusive MONGO_DEST_ENV lock.
+        unsafe {
+            set_mongo_dest_env(None, None);
+        }
+        let cli = Cli::try_parse_from([
+            "bless",
+            "ls",
+            "--use-mongodb",
+            "--db",
+            "otherdb",
+            "--collection",
+            "othercol",
+        ])
+        .unwrap();
+        assert_eq!(cli.db, "otherdb");
+        assert_eq!(cli.collection, "othercol");
+        assert_eq!(cli.query, Some(QueryCommand::Ls));
     }
 
     #[cfg(feature = "serve")]
