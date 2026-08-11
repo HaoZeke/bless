@@ -410,7 +410,7 @@ fn dest_path(dir: &Path, output: &str) -> PathBuf {
 
 fn split_single_dest_error(uuid: &str) -> BlessError {
     BlessError::Config(format!(
-        "run {uuid} has two streams; omit -o to write both or pass a prefix that matches one file"
+        "run {uuid} has two streams; omit -o to write both"
     ))
 }
 
@@ -638,6 +638,8 @@ mod tests {
         match err {
             BlessError::Config(msg) => {
                 assert!(msg.contains("two streams"), "{msg}");
+                assert!(msg.contains("omit -o to write both"), "{msg}");
+                assert!(!msg.contains("prefix that matches one file"), "{msg}");
             }
             other => panic!("{other:?}"),
         }
@@ -645,6 +647,8 @@ mod tests {
         match err {
             BlessError::Config(msg) => {
                 assert!(msg.contains("two streams"), "{msg}");
+                assert!(msg.contains("omit -o to write both"), "{msg}");
+                assert!(!msg.contains("prefix that matches one file"), "{msg}");
             }
             other => panic!("{other:?}"),
         }
