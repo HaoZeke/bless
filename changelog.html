@@ -106,12 +106,18 @@ data-aria-dark="Switch to auto color mode">
     </button>
     <div class="sy-scrollbar sy-rside-inner px-6 xl:top-16 xl:sticky xl:pl-0 pt-6 pb-4"><div class="localtoc"><h3>On this page</h3><ul>
 <li><a class="reference internal" href="#id1">Changelog</a><ul>
+<li><a class="reference internal" href="#unreleased">Unreleased</a><ul>
+<li><a class="reference internal" href="#documentation">Documentation</a></li>
+<li><a class="reference internal" href="#ci">CI</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#v0-2-0-2026-03-08">v0.2.0 - 2026-03-08</a><ul>
+<li><a class="reference internal" href="#breaking">Breaking</a></li>
 <li><a class="reference internal" href="#bugfixes">Bugfixes</a></li>
 <li><a class="reference internal" href="#enhancements">Enhancements</a></li>
 <li><a class="reference internal" href="#refactoring">Refactoring</a></li>
-<li><a class="reference internal" href="#documentation">Documentation</a></li>
-<li><a class="reference internal" href="#ci">CI</a></li>
+<li><a class="reference internal" href="#id2">Documentation</a></li>
+<li><a class="reference internal" href="#id3">CI</a></li>
 <li><a class="reference internal" href="#tests">Tests</a></li>
 </ul>
 </li>
@@ -120,13 +126,13 @@ data-aria-dark="Switch to auto color mode">
 </ul>
 </li>
 <li><a class="reference internal" href="#v0-1-0-2025-07-20">v0.1.0 - 2025-07-20</a><ul>
-<li><a class="reference internal" href="#id2">Bugfixes</a></li>
+<li><a class="reference internal" href="#id4">Bugfixes</a></li>
 <li><a class="reference internal" href="#buildsystem">Buildsystem</a></li>
-<li><a class="reference internal" href="#id3">Documentation</a></li>
-<li><a class="reference internal" href="#id4">Enhancements</a></li>
-<li><a class="reference internal" href="#id5">Maintenance</a></li>
+<li><a class="reference internal" href="#id5">Documentation</a></li>
+<li><a class="reference internal" href="#id6">Enhancements</a></li>
+<li><a class="reference internal" href="#id7">Maintenance</a></li>
 <li><a class="reference internal" href="#project">Project</a></li>
-<li><a class="reference internal" href="#id6">Tests</a></li>
+<li><a class="reference internal" href="#id8">Tests</a></li>
 </ul>
 </li>
 </ul>
@@ -225,8 +231,34 @@ data-aria-dark="Switch to auto color mode">
 <h2>Changelog<a class="headerlink" href="#id1" title="Link to this heading">¶</a></h2>
 <p>All notable changes to this project will be documented in this file. See <a class="reference external" href="https://www.conventionalcommits.org/">conventional commits</a> for commit guidelines.</p>
 <hr class="docutils" />
+<section id="unreleased">
+<h3>Unreleased<a class="headerlink" href="#unreleased" title="Link to this heading">¶</a></h3>
+<section id="documentation">
+<h4>Documentation<a class="headerlink" href="#documentation" title="Link to this heading">¶</a></h4>
+<ul class="simple">
+<li><p>Drop public cf-ci references; use generic log-filtering examples</p></li>
+<li><p>Align Sphinx/orgmode setup so RST is generated, not committed</p></li>
+<li><p>Site chrome: inline logo, author link, TurtleTech footer</p></li>
+<li><p>Analytics: Plausible to Umami, plus Antics tracker; closed-path TurtleTech SVG</p></li>
+</ul>
+</section>
+<section id="ci">
+<h4>CI<a class="headerlink" href="#ci" title="Link to this heading">¶</a></h4>
+<ul class="simple">
+<li><p>Release workflow for Zenodo DOI minting</p></li>
+<li><p>Docs deploy path, write permissions, and CNAME for GitHub Pages</p></li>
+</ul>
+</section>
+</section>
+<hr class="docutils" />
 <section id="v0-2-0-2026-03-08">
 <h3>v0.2.0 - 2026-03-08<a class="headerlink" href="#v0-2-0-2026-03-08" title="Link to this heading">¶</a></h3>
+<section id="breaking">
+<h4>Breaking<a class="headerlink" href="#breaking" title="Link to this heading">¶</a></h4>
+<ul class="simple">
+<li><p>Clap 4 requires <code class="docutils literal notranslate"><span class="pre">--</span></code> before the wrapped command (<code class="docutils literal notranslate"><span class="pre">bless</span> <span class="pre">[OPTIONS]</span> <span class="pre">--</span> <span class="pre">COMMAND</span> <span class="pre">[ARGS...]</span></code>)</p></li>
+</ul>
+</section>
 <section id="bugfixes">
 <h4>Bugfixes<a class="headerlink" href="#bugfixes" title="Link to this heading">¶</a></h4>
 <ul class="simple">
@@ -257,16 +289,16 @@ data-aria-dark="Switch to auto color mode">
 <li><p>Removed unused dependencies: wild, async-trait</p></li>
 </ul>
 </section>
-<section id="documentation">
-<h4>Documentation<a class="headerlink" href="#documentation" title="Link to this heading">¶</a></h4>
+<section id="id2">
+<h4>Documentation<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h4>
 <ul class="simple">
 <li><p>Sphinx documentation site with Shibuya theme (Diataxis structure) (closes #3, #4)</p></li>
 <li><p>Tutorial, how-to guides (cf-ci, MongoDB, serve), reference docs</p></li>
 <li><p>Contributing guide with project structure</p></li>
 </ul>
 </section>
-<section id="ci">
-<h4>CI<a class="headerlink" href="#ci" title="Link to this heading">¶</a></h4>
+<section id="id3">
+<h4>CI<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h4>
 <ul class="simple">
 <li><p>GitHub Actions: cargo test + clippy + fmt on ubuntu + macos (closes #13)</p></li>
 <li><p>Serve feature validation with capnpc</p></li>
@@ -296,8 +328,8 @@ data-aria-dark="Switch to auto color mode">
 <hr class="docutils" />
 <section id="v0-1-0-2025-07-20">
 <h3>v0.1.0 - 2025-07-20<a class="headerlink" href="#v0-1-0-2025-07-20" title="Link to this heading">¶</a></h3>
-<section id="id2">
-<h4>Bugfixes<a class="headerlink" href="#id2" title="Link to this heading">¶</a></h4>
+<section id="id4">
+<h4>Bugfixes<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h4>
 <ul class="simple">
 <li><p>Store outputs for failing commands - (917763f) - HaoZeke</p></li>
 </ul>
@@ -308,8 +340,8 @@ data-aria-dark="Switch to auto color mode">
 <li><p>Add deps for timestamping - (5d19e31) - HaoZeke</p></li>
 </ul>
 </section>
-<section id="id3">
-<h4>Documentation<a class="headerlink" href="#id3" title="Link to this heading">¶</a></h4>
+<section id="id5">
+<h4>Documentation<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h4>
 <ul class="simple">
 <li><p>Add a minor comment on conventions - (299babd) - HaoZeke</p></li>
 <li><p>Regenerate from org - (cf501c3) - HaoZeke</p></li>
@@ -320,8 +352,8 @@ data-aria-dark="Switch to auto color mode">
 <li><p>Add details on included components - (f13d483) - HaoZeke</p></li>
 </ul>
 </section>
-<section id="id4">
-<h4>Enhancements<a class="headerlink" href="#id4" title="Link to this heading">¶</a></h4>
+<section id="id6">
+<h4>Enhancements<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h4>
 <ul class="simple">
 <li><p>Add a small helper script - (faeff03) - HaoZeke</p></li>
 <li><p>Timestamp mongodb entries - (1654339) - HaoZeke</p></li>
@@ -340,8 +372,8 @@ data-aria-dark="Switch to auto color mode">
 <li><p>Start with a baseline implementation - (d558c13) - HaoZeke</p></li>
 </ul>
 </section>
-<section id="id5">
-<h4>Maintenance<a class="headerlink" href="#id5" title="Link to this heading">¶</a></h4>
+<section id="id7">
+<h4>Maintenance<a class="headerlink" href="#id7" title="Link to this heading">¶</a></h4>
 <ul class="simple">
 <li><p>Prep for release - (46d3051) - HaoZeke</p></li>
 <li><p>Add a baseline cocogitto config - (5705178) - HaoZeke</p></li>
@@ -367,8 +399,8 @@ data-aria-dark="Switch to auto color mode">
 <li><p>Initialize with defaults - (f70f8af) - HaoZeke</p></li>
 </ul>
 </section>
-<section id="id6">
-<h4>Tests<a class="headerlink" href="#id6" title="Link to this heading">¶</a></h4>
+<section id="id8">
+<h4>Tests<a class="headerlink" href="#id8" title="Link to this heading">¶</a></h4>
 <ul class="simple">
 <li><p>Rework for new structure - (1116f62) - HaoZeke</p></li>
 <li><p>Add basic ones for gh-7 - (565c62f) - HaoZeke</p></li>
