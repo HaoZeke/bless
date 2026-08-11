@@ -92,9 +92,10 @@ with ``-o -`` (no file to persist; config error). Every document writes
 with ``--split`` (one document per stream, shared ``run_uuid``). Unique
 compound index is ``(run_uuid, stream)``.
 
-Without ``--split``, that gzip contains only ``INFO`` and ``WARN``. ``--split``
-does not apply that filter (stdout gzip is ``INFO`` and ``TRACE``, stderr
-gzip is ``WARN`` and ``ERROR``).
+Without ``--split``, that gzip is the full combined archive (``TRACE``,
+``DEBUG``, ``INFO``, ``WARN``, ``ERROR``), same as a run without
+``--use-mongodb``. ``--split`` writes ``INFO`` and ``TRACE`` to the stdout gzip
+and ``WARN`` and ``ERROR`` to the stderr gzip.
 
 Default destination is the ``commands`` collection in the ``bless``
 database.

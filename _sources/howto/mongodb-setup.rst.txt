@@ -73,13 +73,11 @@ Querying stored runs
 Gzip contents with ``--use-mongodb``
 ------------------------------------
 
-Without ``--split``, the gzip persisted to MongoDB contains only ``INFO`` and
-``WARN`` (command stdout and stderr). ``TRACE`` and ``ERROR`` are omitted from
-that file. Stdout still shows all levels.
+Without ``--split``, the gzip persisted to MongoDB is the same combined
+file as a local run: ``TRACE``, ``DEBUG``, ``INFO``, ``WARN``, and ``ERROR``.
 
-With ``--split``, there is no extra filter: the stdout gzip is ``INFO`` and
-``TRACE``, the stderr gzip is ``WARN`` and ``ERROR``, and both documents are
-stored.
+With ``--split``, the stdout gzip is ``INFO`` and ``TRACE``, the stderr gzip
+is ``WARN`` and ``ERROR``, and both documents are stored.
 
 How the blob is stored
 ----------------------

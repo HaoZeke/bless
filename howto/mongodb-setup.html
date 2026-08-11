@@ -264,12 +264,10 @@ non-unique index.</p>
 </section>
 <section id="gzip-contents-with-use-mongodb">
 <h2>Gzip contents with <code class="docutils literal notranslate"><span class="pre">--use-mongodb</span></code><a class="headerlink" href="#gzip-contents-with-use-mongodb" title="Link to this heading">¶</a></h2>
-<p>Without <code class="docutils literal notranslate"><span class="pre">--split</span></code>, the gzip persisted to MongoDB contains only <code class="docutils literal notranslate"><span class="pre">INFO</span></code> and
-<code class="docutils literal notranslate"><span class="pre">WARN</span></code> (command stdout and stderr). <code class="docutils literal notranslate"><span class="pre">TRACE</span></code> and <code class="docutils literal notranslate"><span class="pre">ERROR</span></code> are omitted from
-that file. Stdout still shows all levels.</p>
-<p>With <code class="docutils literal notranslate"><span class="pre">--split</span></code>, there is no extra filter: the stdout gzip is <code class="docutils literal notranslate"><span class="pre">INFO</span></code> and
-<code class="docutils literal notranslate"><span class="pre">TRACE</span></code>, the stderr gzip is <code class="docutils literal notranslate"><span class="pre">WARN</span></code> and <code class="docutils literal notranslate"><span class="pre">ERROR</span></code>, and both documents are
-stored.</p>
+<p>Without <code class="docutils literal notranslate"><span class="pre">--split</span></code>, the gzip persisted to MongoDB is the same combined
+file as a local run: <code class="docutils literal notranslate"><span class="pre">TRACE</span></code>, <code class="docutils literal notranslate"><span class="pre">DEBUG</span></code>, <code class="docutils literal notranslate"><span class="pre">INFO</span></code>, <code class="docutils literal notranslate"><span class="pre">WARN</span></code>, and <code class="docutils literal notranslate"><span class="pre">ERROR</span></code>.</p>
+<p>With <code class="docutils literal notranslate"><span class="pre">--split</span></code>, the stdout gzip is <code class="docutils literal notranslate"><span class="pre">INFO</span></code> and <code class="docutils literal notranslate"><span class="pre">TRACE</span></code>, the stderr gzip
+is <code class="docutils literal notranslate"><span class="pre">WARN</span></code> and <code class="docutils literal notranslate"><span class="pre">ERROR</span></code>, and both documents are stored.</p>
 </section>
 <section id="how-the-blob-is-stored">
 <h2>How the blob is stored<a class="headerlink" href="#how-the-blob-is-stored" title="Link to this heading">¶</a></h2>
