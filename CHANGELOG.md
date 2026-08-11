@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file. See [conven
 ## Unreleased
 #### Bugfixes
 - Combined `--use-mongodb` gzip archives TRACE through ERROR; drop the Info|Warn-only filter
+#### CI
+- Clippy and test `--features mongodb,serve` on check-serve; MSRV cargo check `--features mongodb,serve`
 
 - - -
 ## v0.3.0 - 2026-08-11
