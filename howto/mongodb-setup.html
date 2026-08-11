@@ -231,14 +231,18 @@ duration, timestamps, label, UUID).</p>
 <li><p>Runs the command with logging as usual</p></li>
 <li><p>Connects to MongoDB</p></li>
 <li><p>Stores each gzip the logger opened, plus metadata, in the
-<code class="docutils literal notranslate"><span class="pre">local.commands</span></code> collection</p></li>
+<code class="docutils literal notranslate"><span class="pre">bless.commands</span></code> collection</p></li>
 </ol>
+<p>Override the destination with <code class="docutils literal notranslate"><span class="pre">--db</span></code> / <code class="docutils literal notranslate"><span class="pre">--collection</span></code> or
+<code class="docutils literal notranslate"><span class="pre">MONGODB_DB</span></code> / <code class="docutils literal notranslate"><span class="pre">MONGODB_COLLECTION</span></code>.</p>
 <p>Persist uploads the gzip files the logger opened, not a reconstructed
 <code class="docutils literal notranslate"><span class="pre">{label}_{uuid}.log.gz</span></code> name. <code class="docutils literal notranslate"><span class="pre">--use-mongodb</span></code> with <code class="docutils literal notranslate"><span class="pre">-o</span> <span class="pre">-</span></code> is a config
 error: stdout-only mode writes no gzip to upload.</p>
 <p><code class="docutils literal notranslate"><span class="pre">--use-mongodb</span> <span class="pre">--split</span></code> inserts one document per stream. Both share
-<code class="docutils literal notranslate"><span class="pre">run_uuid</span></code>; <code class="docutils literal notranslate"><span class="pre">stream</span></code> is <code class="docutils literal notranslate"><span class="pre">&quot;stdout&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;stderr&quot;</span></code>. Combined runs omit
-<code class="docutils literal notranslate"><span class="pre">stream</span></code>.</p>
+<code class="docutils literal notranslate"><span class="pre">run_uuid</span></code>; <code class="docutils literal notranslate"><span class="pre">stream</span></code> is <code class="docutils literal notranslate"><span class="pre">&quot;stdout&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;stderr&quot;</span></code>. Combined runs write
+<code class="docutils literal notranslate"><span class="pre">stream</span></code> as an empty string. A unique compound index on
+<code class="docutils literal notranslate"><span class="pre">(run_uuid,</span> <span class="pre">stream)</span></code> allows both documents; <code class="docutils literal notranslate"><span class="pre">(label,</span> <span class="pre">start_time)</span></code> is a
+non-unique index.</p>
 </section>
 <section id="querying-stored-runs">
 <h2>Querying stored runs<a class="headerlink" href="#querying-stored-runs" title="Link to this heading">¶</a></h2>
@@ -262,7 +266,7 @@ and <code class="docutils literal notranslate"><span class="pre">gzip_blob_id</s
 <section id="extracting-a-stored-log">
 <h2>Extracting a stored log<a class="headerlink" href="#extracting-a-stored-log" title="Link to this heading">¶</a></h2>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span data-line="1">python<span class="w"> </span>scripts/get_db_gzip.py<span class="w"> </span><span class="se">\</span>
-</span><span data-line="2"><span class="w">  </span>--db-name<span class="w"> </span><span class="nb">local</span><span class="w"> </span><span class="se">\</span>
+</span><span data-line="2"><span class="w">  </span>--db-name<span class="w"> </span>bless<span class="w"> </span><span class="se">\</span>
 </span><span data-line="3"><span class="w">  </span>--collection-name<span class="w"> </span>commands<span class="w"> </span><span class="se">\</span>
 </span><span data-line="4"><span class="w">  </span>--query-field<span class="w"> </span>label<span class="w"> </span><span class="se">\</span>
 </span><span data-line="5"><span class="w">  </span>--query-value<span class="w"> </span>nightly-build<span class="w"> </span><span class="se">\</span>

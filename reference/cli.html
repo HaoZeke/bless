@@ -109,6 +109,8 @@ data-aria-dark="Switch to auto color mode">
 <li><a class="reference internal" href="#options">Options</a><ul>
 <li><a class="reference internal" href="#label-label"><code class="docutils literal notranslate"><span class="pre">--label</span> <span class="pre">&lt;LABEL&gt;</span></code></a></li>
 <li><a class="reference internal" href="#use-mongodb"><code class="docutils literal notranslate"><span class="pre">--use-mongodb</span></code></a></li>
+<li><a class="reference internal" href="#db-name"><code class="docutils literal notranslate"><span class="pre">--db</span> <span class="pre">&lt;NAME&gt;</span></code></a></li>
+<li><a class="reference internal" href="#collection-name"><code class="docutils literal notranslate"><span class="pre">--collection</span> <span class="pre">&lt;NAME&gt;</span></code></a></li>
 <li><a class="reference internal" href="#force-gridfs"><code class="docutils literal notranslate"><span class="pre">--force-gridfs</span></code></a></li>
 <li><a class="reference internal" href="#no-timestamp"><code class="docutils literal notranslate"><span class="pre">--no-timestamp</span></code></a></li>
 <li><a class="reference internal" href="#format-format"><code class="docutils literal notranslate"><span class="pre">--format</span> <span class="pre">&lt;FORMAT&gt;</span></code></a></li>
@@ -239,9 +241,23 @@ data-aria-dark="Switch to auto color mode">
 <p>Store the gzip log blob in MongoDB after the command finishes.</p>
 <p>Requires <code class="docutils literal notranslate"><span class="pre">MONGODB_URI</span></code> environment variable.</p>
 <p>Uploads the gzip file(s) the logger actually opened. Cannot be combined
-with <code class="docutils literal notranslate"><span class="pre">-o</span> <span class="pre">-</span></code> (no file to persist; config error). With <code class="docutils literal notranslate"><span class="pre">--split</span></code>, each
-stream is a separate document tagged <code class="docutils literal notranslate"><span class="pre">stream:</span> <span class="pre">&quot;stdout&quot;</span></code> or
-<code class="docutils literal notranslate"><span class="pre">stream:</span> <span class="pre">&quot;stderr&quot;</span></code>.</p>
+with <code class="docutils literal notranslate"><span class="pre">-o</span> <span class="pre">-</span></code> (no file to persist; config error). Every document writes
+<code class="docutils literal notranslate"><span class="pre">stream</span></code>: empty string for a combined run, or <code class="docutils literal notranslate"><span class="pre">&quot;stdout&quot;</span></code> / <code class="docutils literal notranslate"><span class="pre">&quot;stderr&quot;</span></code>
+with <code class="docutils literal notranslate"><span class="pre">--split</span></code> (one document per stream, shared <code class="docutils literal notranslate"><span class="pre">run_uuid</span></code>). Unique
+compound index is <code class="docutils literal notranslate"><span class="pre">(run_uuid,</span> <span class="pre">stream)</span></code>.</p>
+<p>Default destination is the <code class="docutils literal notranslate"><span class="pre">commands</span></code> collection in the <code class="docutils literal notranslate"><span class="pre">bless</span></code>
+database.</p>
+</section>
+<section id="db-name">
+<h3><code class="docutils literal notranslate"><span class="pre">--db</span> <span class="pre">&lt;NAME&gt;</span></code><a class="headerlink" href="#db-name" title="Link to this heading">¶</a></h3>
+<p>MongoDB database name. Default: <code class="docutils literal notranslate"><span class="pre">bless</span></code>. Also reads <code class="docutils literal notranslate"><span class="pre">MONGODB_DB</span></code>.</p>
+<p>Has no effect unless <code class="docutils literal notranslate"><span class="pre">--use-mongodb</span></code> is also set.</p>
+</section>
+<section id="collection-name">
+<h3><code class="docutils literal notranslate"><span class="pre">--collection</span> <span class="pre">&lt;NAME&gt;</span></code><a class="headerlink" href="#collection-name" title="Link to this heading">¶</a></h3>
+<p>MongoDB collection name. Default: <code class="docutils literal notranslate"><span class="pre">commands</span></code>. Also reads
+<code class="docutils literal notranslate"><span class="pre">MONGODB_COLLECTION</span></code>.</p>
+<p>Has no effect unless <code class="docutils literal notranslate"><span class="pre">--use-mongodb</span></code> is also set.</p>
 </section>
 <section id="force-gridfs">
 <h3><code class="docutils literal notranslate"><span class="pre">--force-gridfs</span></code><a class="headerlink" href="#force-gridfs" title="Link to this heading">¶</a></h3>

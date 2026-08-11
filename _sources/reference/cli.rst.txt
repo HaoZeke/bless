@@ -30,9 +30,28 @@ Store the gzip log blob in MongoDB after the command finishes.
 Requires ``MONGODB_URI`` environment variable.
 
 Uploads the gzip file(s) the logger actually opened. Cannot be combined
-with ``-o -`` (no file to persist; config error). With ``--split``, each
-stream is a separate document tagged ``stream: "stdout"`` or
-``stream: "stderr"``.
+with ``-o -`` (no file to persist; config error). Every document writes
+``stream``: empty string for a combined run, or ``"stdout"`` / ``"stderr"``
+with ``--split`` (one document per stream, shared ``run_uuid``). Unique
+compound index is ``(run_uuid, stream)``.
+
+Default destination is the ``commands`` collection in the ``bless``
+database.
+
+``--db <NAME>``
+~~~~~~~~~~~~~~~
+
+MongoDB database name. Default: ``bless``. Also reads ``MONGODB_DB``.
+
+Has no effect unless ``--use-mongodb`` is also set.
+
+``--collection <NAME>``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+MongoDB collection name. Default: ``commands``. Also reads
+``MONGODB_COLLECTION``.
+
+Has no effect unless ``--use-mongodb`` is also set.
 
 ``--force-gridfs``
 ~~~~~~~~~~~~~~~~~~

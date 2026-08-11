@@ -34,15 +34,20 @@ This:
 2. Connects to MongoDB
 
 3. Stores each gzip the logger opened, plus metadata, in the
-   ``local.commands`` collection
+   ``bless.commands`` collection
+
+Override the destination with ``--db`` / ``--collection`` or
+``MONGODB_DB`` / ``MONGODB_COLLECTION``.
 
 Persist uploads the gzip files the logger opened, not a reconstructed
 ``{label}_{uuid}.log.gz`` name. ``--use-mongodb`` with ``-o -`` is a config
 error: stdout-only mode writes no gzip to upload.
 
 ``--use-mongodb --split`` inserts one document per stream. Both share
-``run_uuid``; ``stream`` is ``"stdout"`` or ``"stderr"``. Combined runs omit
-``stream``.
+``run_uuid``; ``stream`` is ``"stdout"`` or ``"stderr"``. Combined runs write
+``stream`` as an empty string. A unique compound index on
+``(run_uuid, stream)`` allows both documents; ``(label, start_time)`` is a
+non-unique index.
 
 Querying stored runs
 --------------------
@@ -72,7 +77,7 @@ Extracting a stored log
 .. code:: bash
 
     python scripts/get_db_gzip.py \
-      --db-name local \
+      --db-name bless \
       --collection-name commands \
       --query-field label \
       --query-value nightly-build \
