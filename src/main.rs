@@ -2,7 +2,7 @@ use bless::cli::Cli;
 use bless::db::{list_databases, setup_mongodb};
 use bless::error::BlessError;
 use bless::logger::{setup_logger, LoggerConfig};
-use bless::runner::run_command;
+use bless::runner::{exit_code_from_status, run_command};
 use bless::storage_backends::mongodb::{MongoDBStorage, SaveGzipBlobParams};
 use clap::Parser;
 use log::{error, trace};
@@ -13,10 +13,7 @@ use uuid::Uuid;
 fn main() -> ExitCode {
     let cli = Cli::parse();
     match run(cli) {
-        Ok(status) => status
-            .code()
-            .map(|c| ExitCode::from(c as u8))
-            .unwrap_or(ExitCode::FAILURE),
+        Ok(status) => ExitCode::from(exit_code_from_status(status)),
         Err(e) => {
             eprintln!("bless: {e}");
             ExitCode::FAILURE

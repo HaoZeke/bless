@@ -11,6 +11,33 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_true_command() {
+        let result = run_command("true", &[]).await;
+        assert!(result.is_ok(), "Expected true to succeed");
+        let status = result.unwrap();
+        assert!(status.success());
+        assert_eq!(bless::runner::exit_code_from_status(status), 0);
+    }
+
+    #[tokio::test]
+    async fn test_grandchild_holding_pipe_does_not_hang() {
+        let fut = run_command(
+            "bash",
+            &[
+                "-c".into(),
+                "sleep 10 & echo done".into(),
+            ],
+        );
+        let result = tokio::time::timeout(std::time::Duration::from_secs(5), fut).await;
+        assert!(
+            result.is_ok(),
+            "run_command must return after the child exits even if a grandchild holds a pipe"
+        );
+        let status = result.unwrap().expect("run_command should succeed");
+        assert!(status.success());
+    }
+
+    #[tokio::test]
     async fn test_failing_command() {
         let result = run_command("false", &[]).await;
         assert!(
@@ -33,6 +60,17 @@ mod tests {
         assert!(result.is_ok());
         let status = result.unwrap();
         assert_eq!(status.code(), Some(42));
+        assert_eq!(bless::runner::exit_code_from_status(status), 42);
+    }
+
+    #[cfg(unix)]
+    #[tokio::test]
+    async fn test_signal_death_maps_to_128_plus_signal() {
+        let result = run_command("bash", &["-c".into(), "kill -s TERM $$".into()]).await;
+        assert!(result.is_ok());
+        let status = result.unwrap();
+        assert_eq!(status.code(), None);
+        assert_eq!(bless::runner::exit_code_from_status(status), 128 + 15);
     }
 
     #[tokio::test]
