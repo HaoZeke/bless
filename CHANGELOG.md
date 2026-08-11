@@ -5,6 +5,10 @@ All notable changes to this project will be documented in this file. See [conven
 ## Unreleased
 #### Bugfixes
 - Stream GridFS uploads from disk instead of buffering the gzip in memory
+- Split gzip names insert `_stdout`/`_stderr` before the extension so `-o build_log.gz` no longer collapses both streams
+- Stdout gzip keeps Info and Trace only; Warn and Error go to the stderr gzip
+- `-o -` writes no gzip files, with or without `--split`
+- Start TRACE (label/uuid) is emitted from setup_logger on every logging path
 #### Enhancements
 - get_db_gzip.py downloads GridFS blobs when storage is gridfs or gzip_blob_id is set
 #### Documentation
