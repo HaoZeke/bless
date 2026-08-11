@@ -51,5 +51,6 @@ is always complete.
 
 =bless= adds these internal lines:
 
-- =TRACE= level: label, UUID, and duration at start/end
+- =TRACE= level: label and UUID at start. Duration at end only when
+  =--use-mongodb= is not set
 - =ERROR= level: command failure messages

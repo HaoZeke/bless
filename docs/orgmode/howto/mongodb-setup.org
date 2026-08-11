@@ -3,8 +3,8 @@
 
 * Overview
 
-=bless= can store compressed log blobs in MongoDB alongside metadata (command,
-duration, timestamps, label, UUID).
+=bless= can store compressed log blobs in MongoDB alongside metadata
+(command, duration, timestamps, label, =run_uuid=).
 
 * Prerequisites
 
@@ -46,11 +46,15 @@ non-unique index.
 mongosh --eval 'db.commands.find({label: "nightly-build"}).sort({start_time: -1}).limit(5)'
 #+end_src
 
-* Filtering by MongoDB mode
+* Gzip contents with =--use-mongodb=
 
-When =--use-mongodb= is set, the gzip file only captures INFO and WARN levels
-(not TRACE). This reduces storage for production use. Stdout still shows all
-levels.
+Without =--split=, the gzip persisted to MongoDB contains only =INFO= and
+=WARN= (command stdout and stderr). =TRACE= and =ERROR= are omitted from
+that file. Stdout still shows all levels.
+
+With =--split=, there is no extra filter: the stdout gzip is =INFO= and
+=TRACE=, the stderr gzip is =WARN= and =ERROR=, and both documents are
+stored.
 
 * How the blob is stored
 

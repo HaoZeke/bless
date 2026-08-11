@@ -28,6 +28,10 @@ with =-o -= (no file to persist; config error). Every document writes
 with =--split= (one document per stream, shared =run_uuid=). Unique
 compound index is =(run_uuid, stream)=.
 
+Without =--split=, that gzip contains only =INFO= and =WARN=. =--split=
+does not apply that filter (stdout gzip is =INFO= and =TRACE=, stderr
+gzip is =WARN= and =ERROR=).
+
 Default destination is the =commands= collection in the =bless=
 database.
 
@@ -73,7 +77,9 @@ Output file path. Defaults to ={label}_{uuid}.log.gz= in the current directory.
 
 Special values:
 - =-=: skip file output entirely (stdout only)
-- Path not ending in =.gz=: write plain text (no compression)
+
+Any other path is gzip-compressed, including names that do not end in
+=.gz=. There is no plain-text file backend.
 
 ** =--split=
 
