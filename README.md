@@ -25,7 +25,8 @@ logger init.
 
 ### Log levels
 
-- `TRACE` -- additional metadata written by `bless` (label, uuid, duration)
+- `TRACE` -- additional metadata written by `bless` (label, uuid; duration
+  unless `--use-mongodb`)
 - `INFO` -- stdout of the wrapped command
 - `WARN` -- stderr of the wrapped command
 - `ERROR` -- bless-level errors (command failure, I/O errors)
@@ -115,7 +116,8 @@ bless --label run --split -- ./simulation
 
 ## Serve mode (feature-gated)
 
-When built with `--features serve`, two additional flags are available.
+When built with `--features serve`, `--serve`, `--remote`, and `--local`
+are available.
 
 Start a log aggregation server (capnp RPC). `:port` binds `127.0.0.1:port`
 (not all interfaces). No dummy command is required:
@@ -143,7 +145,8 @@ bless --remote :9000 --local --label worker1 -- ./job.sh
 Without `--local` (and without `-o`), `--remote` writes no local gzip.
 
 Session data is stored under `$XDG_DATA_HOME/bless/sessions/` (or
-`$HOME/.local/share/bless/sessions/`).
+`$HOME/.local/share/bless/sessions/`). If neither is set, the server
+uses `.bless_sessions` in the working directory.
 
 ## MongoDB
 
@@ -154,17 +157,19 @@ MONGODB_URI="mongodb://localhost:27017/" bless --use-mongodb --label experiment 
 ```
 
 The gzip file the logger opened (not a reconstructed name), plus command
-args, label, uuid, timestamps, and duration, are saved to the `commands`
-collection in the `bless` database. Override with `--db` / `--collection`
-or `MONGODB_DB` / `MONGODB_COLLECTION`. `--use-mongodb` with `-o -` is an
-error: there is no gzip to upload. Every document has `stream`: `""` for
-a combined run, `stdout` or `stderr` when `--split` writes two documents
-that share `run_uuid`.
+args, label, `run_uuid`, timestamps, and duration, are saved to the
+`commands` collection in the `bless` database. Override with `--db` /
+`--collection` or `MONGODB_DB` / `MONGODB_COLLECTION`. `--use-mongodb`
+with `-o -` is an error: there is no gzip to upload. Every document has
+`stream`: `""` for a combined run, `stdout` or `stderr` when `--split`
+writes two documents that share `run_uuid`. Blobs larger than 15 MiB go
+to GridFS automatically; `--force-gridfs` uploads smaller blobs the same
+way.
 
-Assuming `pixi` is used to get an instance of `mongod`:
+Start a local `mongod`, then:
 
 ```bash
-pixi run mongod --dbpath $(pwd)/data/database
+mongod --dbpath $(pwd)/data/database
 MONGODB_URI="mongodb://localhost:27017/" bless --use-mongodb -- $CMD_TO_RUN
 ```
 
