@@ -35,7 +35,10 @@ Fields:
 
 * No-timestamp format (=--no-timestamp=)
 
-Stdout only (gzip file keeps timestamps):
+Applies only to stdout with =--format=log=. JSONL stdout always includes
+=ts=. Gzip keeps timestamps either way.
+
+Stdout:
 
 #+begin_example
 [LEVEL] MESSAGE
@@ -44,8 +47,8 @@ Stdout only (gzip file keeps timestamps):
 * Gzip file
 
 The gzip file always uses the default format with full timestamps, regardless
-of =--format= or =--no-timestamp= settings. This ensures the archival record
-is always complete.
+of =--format= or =--no-timestamp= settings. Combined =--use-mongodb= runs
+still omit =TRACE= and =ERROR= from that file.
 
 * Internal log lines
 

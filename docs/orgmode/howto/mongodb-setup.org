@@ -43,7 +43,7 @@ non-unique index.
 * Querying stored runs
 
 #+begin_src bash
-mongosh --eval 'db.commands.find({label: "nightly-build"}).sort({start_time: -1}).limit(5)'
+mongosh --eval 'db.getSiblingDB("bless").commands.find({label: "nightly-build"}).sort({start_time: -1}).limit(5)'
 #+end_src
 
 * Gzip contents with =--use-mongodb=

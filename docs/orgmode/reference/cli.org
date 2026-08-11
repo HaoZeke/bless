@@ -57,10 +57,12 @@ already use GridFS automatically.
 
 ** =--no-timestamp=
 
-Omit timestamps from stdout output. The gzip file still includes full
+Omit timestamps from stdout when =--format=log= (the default). JSONL
+stdout always includes =ts=. The gzip file still includes full
 timestamps.
 
-Useful for piping to downstream tools that expect clean output.
+Useful for piping =--format=log= output to downstream tools that expect
+clean lines.
 
 ** =--format <FORMAT>=
 
