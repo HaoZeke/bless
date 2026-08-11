@@ -162,7 +162,8 @@ args, label, `run_uuid`, timestamps, and duration, are saved to the
 `--collection` or `MONGODB_DB` / `MONGODB_COLLECTION`. `--use-mongodb`
 with `-o -` is an error: there is no gzip to upload. Every document has
 `stream`: `""` for a combined run, `stdout` or `stderr` when `--split`
-writes two documents that share `run_uuid`. Blobs larger than 15 MiB go
+writes two documents that share `run_uuid`. Without `--split`, the
+persisted gzip contains only INFO and WARN. Blobs larger than 15 MiB go
 to GridFS automatically; `--force-gridfs` uploads smaller blobs the same
 way.
 
