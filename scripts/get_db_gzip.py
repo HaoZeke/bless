@@ -1,6 +1,10 @@
+import shutil
+
 import click
-from pymongo import MongoClient
+import gridfs
 from bson.binary import Binary
+from pymongo import MongoClient
+
 
 @click.command()
 @click.option('--mongo-url', default='mongodb://localhost:27017', help='MongoDB connection URL', show_default=True)
@@ -11,7 +15,10 @@ from bson.binary import Binary
 @click.option('--output-file', default='output.gzip', help='Output file name', show_default=True)
 def write_gzip_blob(mongo_url, db_name, collection_name, query_field, query_value, output_file):
     """
-    A simple CLI tool to retrieve and save gzip_blob from a MongoDB document to a .gzip file.
+    Retrieve a stored gzip log from MongoDB and write it to a file.
+
+    Documents with storage=gridfs or gzip_blob_id are streamed from the
+    default GridFS bucket. Legacy documents expose gzip_blob Binary.
     """
     client = MongoClient(mongo_url)
     try:
@@ -21,9 +28,17 @@ def write_gzip_blob(mongo_url, db_name, collection_name, query_field, query_valu
         document = collection.find_one(query)
 
         if document:
-            if "gzip_blob" in document:
+            if document.get("storage") == "gridfs" or "gzip_blob_id" in document:
+                if "gzip_blob_id" not in document:
+                    click.echo("gzip_blob_id field is missing")
+                else:
+                    fs = gridfs.GridFS(db)
+                    grid_out = fs.get(document["gzip_blob_id"])
+                    with open(output_file, "wb") as file:
+                        shutil.copyfileobj(grid_out, file)
+                    click.echo(f"File written successfully: {output_file}")
+            elif "gzip_blob" in document:
                 gzip_blob = document["gzip_blob"]
-                # Write the binary data to a .gzip file if it is a binary type
                 if isinstance(gzip_blob, (Binary, bytes)):
                     with open(output_file, "wb") as file:
                         file.write(gzip_blob)
@@ -38,6 +53,7 @@ def write_gzip_blob(mongo_url, db_name, collection_name, query_field, query_valu
         click.echo(f"Error: {e}")
     finally:
         client.close()
+
 
 if __name__ == "__main__":
     write_gzip_blob()
