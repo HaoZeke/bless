@@ -48,7 +48,7 @@ Stdout:
 
 The gzip file always uses the default format with full timestamps, regardless
 of =--format= or =--no-timestamp= settings. Combined =--use-mongodb= runs
-still omit =TRACE= and =ERROR= from that file.
+archive the same levels as a local single file (=TRACE= through =ERROR=).
 
 * Internal log lines
 
