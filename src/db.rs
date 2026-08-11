@@ -26,3 +26,28 @@ pub async fn list_databases(client: &Client) -> Result<(), BlessError> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::error::BlessError;
+
+    #[tokio::test]
+    async fn setup_mongodb_without_uri_is_config_error() {
+        static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+        let _guard = LOCK.lock().expect("env lock");
+        // SAFETY: exclusive lock; no other test in this crate reads MONGODB_URI
+        // during the call. env::remove_var is unsafe on rustc 1.87+.
+        #[allow(unused_unsafe)]
+        unsafe {
+            std::env::remove_var("MONGODB_URI");
+        }
+        let err = setup_mongodb().await.unwrap_err();
+        match err {
+            BlessError::Config(msg) => {
+                assert!(msg.contains("MONGODB_URI"), "{msg}");
+            }
+            other => panic!("expected Config, got {other:?}"),
+        }
+    }
+}
