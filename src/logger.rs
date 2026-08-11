@@ -8,7 +8,6 @@ use std::time::SystemTime;
 pub struct LoggerConfig<'a> {
     pub label: &'a str,
     pub uuid: &'a str,
-    pub use_mongodb: bool,
     pub no_timestamp: bool,
     pub format: &'a OutputFormat,
     pub output: Option<&'a str>,
@@ -101,6 +100,20 @@ pub(crate) fn split_stream_path(base: &str, stream: &str) -> String {
     } else {
         format!("{base}_{stream}.log.gz")
     }
+}
+
+/// Combined (non-`--split`) gzip archives every level.
+///
+/// Shared by the local and `--use-mongodb` single-file paths.
+pub(crate) fn is_combined_file_level(level: log::Level) -> bool {
+    matches!(
+        level,
+        log::Level::Trace
+            | log::Level::Debug
+            | log::Level::Info
+            | log::Level::Warn
+            | log::Level::Error
+    )
 }
 
 /// Command stdout and bless metadata belong in the stdout gzip.
@@ -240,28 +253,16 @@ pub fn setup_logger_with_extra(
         let logger_clone = Box::new(file_logger.as_ref().clone()) as Box<dyn Log>;
 
         let file_dispatch = fern::Dispatch::new()
+            .filter(|metadata| is_combined_file_level(metadata.level()))
             .chain(logger_clone)
             .level(log::LevelFilter::Trace);
 
-        if config.use_mongodb {
-            let mongodb_dispatch = fern::Dispatch::new()
-                .filter(|metadata| matches!(metadata.level(), log::Level::Info | log::Level::Warn))
-                .chain(file_dispatch);
-
-            apply_dispatch(
-                fern::Dispatch::new()
-                    .chain(stdout_dispatch)
-                    .chain(mongodb_dispatch),
-                extra,
-            )?;
-        } else {
-            apply_dispatch(
-                fern::Dispatch::new()
-                    .chain(stdout_dispatch)
-                    .chain(file_dispatch),
-                extra,
-            )?;
-        }
+        apply_dispatch(
+            fern::Dispatch::new()
+                .chain(stdout_dispatch)
+                .chain(file_dispatch),
+            extra,
+        )?;
     } else {
         apply_dispatch(fern::Dispatch::new().chain(stdout_dispatch), extra)?;
     }
@@ -289,7 +290,6 @@ mod tests {
         LoggerConfig {
             label: "lab",
             uuid,
-            use_mongodb: false,
             no_timestamp: true,
             format,
             output,
@@ -498,6 +498,15 @@ mod tests {
                 stderr: "lab_abcd_stderr.log.gz".into(),
             }
         );
+    }
+
+    #[test]
+    fn combined_file_level_accepts_error_and_trace() {
+        assert!(is_combined_file_level(log::Level::Error));
+        assert!(is_combined_file_level(log::Level::Trace));
+        assert!(is_combined_file_level(log::Level::Debug));
+        assert!(is_combined_file_level(log::Level::Info));
+        assert!(is_combined_file_level(log::Level::Warn));
     }
 
     #[test]

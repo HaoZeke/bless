@@ -139,10 +139,6 @@ async fn run_local(
     let logger_config = LoggerConfig {
         label: &cli.label,
         uuid: run_uuid,
-        #[cfg(feature = "mongodb")]
-        use_mongodb: cli.use_mongodb,
-        #[cfg(not(feature = "mongodb"))]
-        use_mongodb: false,
         no_timestamp: cli.no_timestamp,
         format: &cli.format,
         output: cli.gzip_output(),
