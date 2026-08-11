@@ -10,11 +10,11 @@ All notable changes to this project will be documented in this file. See [conven
 - `-o -` writes no gzip files, with or without `--split`
 - Start TRACE (label/uuid) is emitted from setup_logger on every logging path
 - Mongo persist uploads the gzip files the logger opened; `--use-mongodb -o -` is a config error
-- `--use-mongodb --split` stores one document per stream (`stream: stdout|stderr`)
+- `--use-mongodb --split` stores one document per stream (`stream: stdout|stderr`); combined runs write `stream: ""`
 - Persist to `bless.commands` by default; `--db`/`--collection` or `MONGODB_DB`/`MONGODB_COLLECTION` override
 - Do not list all databases on persist
 #### Enhancements
-- Unique index on `run_uuid` and index on `(label, start_time)` after connect
+- Unique compound index on `(run_uuid, stream)` and non-unique index on `(label, start_time)` after connect
 - get_db_gzip.py downloads GridFS blobs when storage is gridfs or gzip_blob_id is set
 #### Documentation
 - Drop public cf-ci references; use generic log-filtering examples

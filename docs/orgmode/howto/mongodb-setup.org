@@ -35,8 +35,10 @@ Persist uploads the gzip files the logger opened, not a reconstructed
 error: stdout-only mode writes no gzip to upload.
 
 =--use-mongodb --split= inserts one document per stream. Both share
-=run_uuid=; =stream= is ="stdout"= or ="stderr"=. Combined runs omit
-=stream=.
+=run_uuid=; =stream= is ="stdout"= or ="stderr"=. Combined runs write
+=stream= as an empty string. A unique compound index on
+=(run_uuid, stream)= allows both documents; =(label, start_time)= is a
+non-unique index.
 
 * Querying stored runs
 

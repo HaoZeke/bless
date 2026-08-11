@@ -150,8 +150,9 @@ The gzip file the logger opened (not a reconstructed name), plus command
 args, label, uuid, timestamps, and duration, are saved to the `commands`
 collection in the `bless` database. Override with `--db` / `--collection`
 or `MONGODB_DB` / `MONGODB_COLLECTION`. `--use-mongodb` with `-o -` is an
-error: there is no gzip to upload. `--split` writes two documents that
-share `run_uuid` and set `stream` to `stdout` or `stderr`.
+error: there is no gzip to upload. Every document has `stream`: `""` for
+a combined run, `stdout` or `stderr` when `--split` writes two documents
+that share `run_uuid`.
 
 Assuming `pixi` is used to get an instance of `mongod`:
 
