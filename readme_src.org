@@ -30,16 +30,24 @@ The ~--format~ flag controls stdout rendering:
 
 The gzip file always uses the timestamped log format regardless of ~--format~.
 * Installation
+From crates.io:
+#+begin_src bash
+cargo install bless
+#+end_src
+To include serve mode (capnp RPC log aggregation):
+#+begin_src bash
+cargo install bless --features serve
+#+end_src
 From source:
 #+begin_src bash
 cargo build --release
 # Binary at ./target/release/bless
 #+end_src
-Or install directly:
+Or install the local checkout:
 #+begin_src bash
 cargo install --path .
 #+end_src
-To include serve mode (capnp RPC log aggregation):
+Serve mode from a local checkout:
 #+begin_src bash
 cargo install --path . --features serve
 #+end_src
@@ -142,5 +150,5 @@ The ~readme~ can be constructed via:
 * License
 MIT. However, this is an academic resource, so *please cite* as much as possible
 via:
-- The Zenodo DOI for general use.
-- TBD a publication
+- https://doi.org/10.5281/zenodo.18912525 (concept DOI; v0.2.0 is
+  https://doi.org/10.5281/zenodo.18912526)

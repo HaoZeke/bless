@@ -41,6 +41,18 @@ The gzip file always uses the timestamped log format regardless of `--format`.
 
 # Installation
 
+From crates.io:
+
+```bash
+cargo install bless
+```
+
+To include serve mode (capnp RPC log aggregation):
+
+```bash
+cargo install bless --features serve
+```
+
 From source:
 
 ```bash
@@ -48,13 +60,13 @@ cargo build --release
 # Binary at ./target/release/bless
 ```
 
-Or install directly:
+Or install the local checkout:
 
 ```bash
 cargo install --path .
 ```
 
-To include serve mode (capnp RPC log aggregation):
+Serve mode from a local checkout:
 
 ```bash
 cargo install --path . --features serve
@@ -179,5 +191,4 @@ pixi run docbld
 MIT. However, this is an academic resource, so **please cite** as much as
 possible via:
 
-- The Zenodo DOI for general use.
-- TBD a publication
+- [10.5281/zenodo.18912525](https://doi.org/10.5281/zenodo.18912525) (concept DOI; v0.2.0 is [10.5281/zenodo.18912526](https://doi.org/10.5281/zenodo.18912526))
