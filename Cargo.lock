@@ -177,6 +177,7 @@ dependencies = [
  "flate2",
  "futures",
  "humantime",
+ "libc",
  "log",
  "mongodb",
  "serde",
