@@ -1,12 +1,12 @@
 use crate::error::BlessError;
 use crate::storage_backends::{select_blob_storage, BlobStorageKind};
-use futures_util::AsyncWriteExt;
 use log::trace;
 use mongodb::bson::DateTime;
 use mongodb::bson::{doc, Binary, Document};
 use mongodb::{Client, Collection, Database};
 use std::fs;
 use std::path::Path;
+use tokio_util::compat::TokioAsyncReadCompatExt;
 
 #[derive(Clone, Debug)]
 pub struct SaveGzipBlobParams<'a> {
@@ -35,9 +35,9 @@ impl MongoDBStorage {
     /// Persist a finished gzip log.
     ///
     /// When `force_gridfs` is true, or the file exceeds
-    /// [`crate::storage_backends::BSON_BLOB_SOFT_LIMIT`], the blob is uploaded
-    /// via GridFS and the metadata document stores `gzip_blob_id`. Otherwise
-    /// the bytes are embedded as `gzip_blob` Binary (legacy path).
+    /// [`crate::storage_backends::BSON_BLOB_SOFT_LIMIT`], the blob is streamed
+    /// into GridFS from disk and the metadata document stores `gzip_blob_id`.
+    /// Otherwise the bytes are embedded as `gzip_blob` Binary (legacy path).
     pub async fn save_gzip_blob(
         &self,
         params: SaveGzipBlobParams<'_>,
@@ -70,11 +70,10 @@ impl MongoDBStorage {
                     force_gridfs
                 );
                 let bucket = self.db.gridfs_bucket(None);
-                let file_bytes = fs::read(params.file_path)?;
-                let mut upload_stream = bucket.open_upload_stream(filename, None);
-                upload_stream.write_all(&file_bytes).await?;
-                upload_stream.close().await?;
-                let file_id = upload_stream.id().clone();
+                let file = tokio::fs::File::open(params.file_path).await?;
+                let file_id = bucket
+                    .upload_from_futures_0_3_reader(filename, file.compat(), None)
+                    .await?;
                 doc.insert("storage", "gridfs");
                 doc.insert("gzip_blob_id", file_id);
             }
