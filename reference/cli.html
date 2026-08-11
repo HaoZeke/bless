@@ -238,6 +238,10 @@ data-aria-dark="Switch to auto color mode">
 <h3><code class="docutils literal notranslate"><span class="pre">--use-mongodb</span></code><a class="headerlink" href="#use-mongodb" title="Link to this heading">¶</a></h3>
 <p>Store the gzip log blob in MongoDB after the command finishes.</p>
 <p>Requires <code class="docutils literal notranslate"><span class="pre">MONGODB_URI</span></code> environment variable.</p>
+<p>Uploads the gzip file(s) the logger actually opened. Cannot be combined
+with <code class="docutils literal notranslate"><span class="pre">-o</span> <span class="pre">-</span></code> (no file to persist; config error). With <code class="docutils literal notranslate"><span class="pre">--split</span></code>, each
+stream is a separate document tagged <code class="docutils literal notranslate"><span class="pre">stream:</span> <span class="pre">&quot;stdout&quot;</span></code> or
+<code class="docutils literal notranslate"><span class="pre">stream:</span> <span class="pre">&quot;stderr&quot;</span></code>.</p>
 </section>
 <section id="force-gridfs">
 <h3><code class="docutils literal notranslate"><span class="pre">--force-gridfs</span></code><a class="headerlink" href="#force-gridfs" title="Link to this heading">¶</a></h3>

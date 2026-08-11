@@ -230,8 +230,15 @@ duration, timestamps, label, UUID).</p>
 <ol class="arabic simple">
 <li><p>Runs the command with logging as usual</p></li>
 <li><p>Connects to MongoDB</p></li>
-<li><p>Stores the gzip blob + metadata in the <code class="docutils literal notranslate"><span class="pre">local.commands</span></code> collection</p></li>
+<li><p>Stores each gzip the logger opened, plus metadata, in the
+<code class="docutils literal notranslate"><span class="pre">local.commands</span></code> collection</p></li>
 </ol>
+<p>Persist uploads the gzip files the logger opened, not a reconstructed
+<code class="docutils literal notranslate"><span class="pre">{label}_{uuid}.log.gz</span></code> name. <code class="docutils literal notranslate"><span class="pre">--use-mongodb</span></code> with <code class="docutils literal notranslate"><span class="pre">-o</span> <span class="pre">-</span></code> is a config
+error: stdout-only mode writes no gzip to upload.</p>
+<p><code class="docutils literal notranslate"><span class="pre">--use-mongodb</span> <span class="pre">--split</span></code> inserts one document per stream. Both share
+<code class="docutils literal notranslate"><span class="pre">run_uuid</span></code>; <code class="docutils literal notranslate"><span class="pre">stream</span></code> is <code class="docutils literal notranslate"><span class="pre">&quot;stdout&quot;</span></code> or <code class="docutils literal notranslate"><span class="pre">&quot;stderr&quot;</span></code>. Combined runs omit
+<code class="docutils literal notranslate"><span class="pre">stream</span></code>.</p>
 </section>
 <section id="querying-stored-runs">
 <h2>Querying stored runs<a class="headerlink" href="#querying-stored-runs" title="Link to this heading">¶</a></h2>

@@ -29,6 +29,11 @@ Store the gzip log blob in MongoDB after the command finishes.
 
 Requires ``MONGODB_URI`` environment variable.
 
+Uploads the gzip file(s) the logger actually opened. Cannot be combined
+with ``-o -`` (no file to persist; config error). With ``--split``, each
+stream is a separate document tagged ``stream: "stdout"`` or
+``stream: "stderr"``.
+
 ``--force-gridfs``
 ~~~~~~~~~~~~~~~~~~
 

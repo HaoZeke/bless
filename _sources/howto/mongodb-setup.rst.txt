@@ -33,7 +33,16 @@ This:
 
 2. Connects to MongoDB
 
-3. Stores the gzip blob + metadata in the ``local.commands`` collection
+3. Stores each gzip the logger opened, plus metadata, in the
+   ``local.commands`` collection
+
+Persist uploads the gzip files the logger opened, not a reconstructed
+``{label}_{uuid}.log.gz`` name. ``--use-mongodb`` with ``-o -`` is a config
+error: stdout-only mode writes no gzip to upload.
+
+``--use-mongodb --split`` inserts one document per stream. Both share
+``run_uuid``; ``stream`` is ``"stdout"`` or ``"stderr"``. Combined runs omit
+``stream``.
 
 Querying stored runs
 --------------------

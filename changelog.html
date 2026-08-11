@@ -243,6 +243,8 @@ data-aria-dark="Switch to auto color mode">
 <li><p>Stdout gzip keeps Info and Trace only; Warn and Error go to the stderr gzip</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">-o</span> <span class="pre">-</span></code> writes no gzip files, with or without <code class="docutils literal notranslate"><span class="pre">--split</span></code></p></li>
 <li><p>Start TRACE (label/uuid) is emitted from setup_logger on every logging path</p></li>
+<li><p>Mongo persist uploads the gzip files the logger opened; <code class="docutils literal notranslate"><span class="pre">--use-mongodb</span> <span class="pre">-o</span> <span class="pre">-</span></code> is a config error</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--use-mongodb</span> <span class="pre">--split</span></code> stores one document per stream (<code class="docutils literal notranslate"><span class="pre">stream:</span> <span class="pre">stdout|stderr</span></code>)</p></li>
 </ul>
 </section>
 <section id="enhancements">
