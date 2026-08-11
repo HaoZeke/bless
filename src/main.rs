@@ -1,5 +1,5 @@
 use bless::cli::Cli;
-use bless::db::{list_databases, setup_mongodb};
+use bless::db::setup_mongodb;
 use bless::error::BlessError;
 use bless::logger::{setup_logger, LoggerConfig};
 use bless::runner::{exit_code_from_status, run_command};
@@ -89,8 +89,7 @@ async fn run(cli: Cli) -> Result<ExitStatus, BlessError> {
 
     if let Some(files) = persist_files {
         let client = setup_mongodb().await?;
-        list_databases(&client).await?;
-        let mongodb_storage = MongoDBStorage::new(&client, "local", "commands").await;
+        let mongodb_storage = MongoDBStorage::new(&client, &cli.db, &cli.collection).await?;
         let args_joined = args.join(" ");
 
         // One document per opened gzip. Combined runs insert once;

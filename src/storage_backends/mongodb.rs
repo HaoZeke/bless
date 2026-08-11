@@ -3,7 +3,8 @@ use crate::storage_backends::{select_blob_storage, BlobStorageKind};
 use log::trace;
 use mongodb::bson::DateTime;
 use mongodb::bson::{doc, Binary, Document};
-use mongodb::{Client, Collection, Database};
+use mongodb::options::IndexOptions;
+use mongodb::{Client, Collection, Database, IndexModel};
 use std::fs;
 use std::path::Path;
 use tokio_util::compat::TokioAsyncReadCompatExt;
@@ -31,10 +32,31 @@ pub struct MongoDBStorage {
 }
 
 impl MongoDBStorage {
-    pub async fn new(client: &Client, db_name: &str, collection_name: &str) -> Self {
+    pub async fn new(
+        client: &Client,
+        db_name: &str,
+        collection_name: &str,
+    ) -> Result<Self, BlessError> {
         let db = client.database(db_name);
         let collection: Collection<Document> = db.collection(collection_name);
-        Self { collection, db }
+        collection
+            .create_index(
+                IndexModel::builder()
+                    .keys(doc! { "run_uuid": 1 })
+                    .options(IndexOptions::builder().unique(true).build())
+                    .build(),
+                None,
+            )
+            .await?;
+        collection
+            .create_index(
+                IndexModel::builder()
+                    .keys(doc! { "label": 1, "start_time": 1 })
+                    .build(),
+                None,
+            )
+            .await?;
+        Ok(Self { collection, db })
     }
 
     /// Persist a finished gzip log.
