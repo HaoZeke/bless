@@ -211,4 +211,36 @@ mod tests {
         assert!(cli.use_mongodb);
         assert_eq!(cli.output.as_deref(), Some("-"));
     }
+
+    #[test]
+    fn binary_passthrough_exit_42() {
+        let dir = tempfile::tempdir().unwrap();
+        let out = dir.path().join("run.log.gz");
+        let status = std::process::Command::new(env!("CARGO_BIN_EXE_bless"))
+            .args([
+                "-o",
+                out.to_str().unwrap(),
+                "--",
+                "bash",
+                "-c",
+                "exit 42",
+            ])
+            .status()
+            .expect("spawn bless");
+        assert_eq!(status.code(), Some(42));
+    }
+
+    #[test]
+    fn binary_self_error_exits_1_and_prefixes_stderr() {
+        let output = std::process::Command::new(env!("CARGO_BIN_EXE_bless"))
+            .args(["-o", "/no/such/dir/x.log.gz", "--", "true"])
+            .output()
+            .expect("spawn bless");
+        assert_eq!(output.status.code(), Some(1));
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        assert!(
+            stderr.starts_with("bless:"),
+            "stderr should start with bless:, got {stderr:?}"
+        );
+    }
 }
