@@ -18,6 +18,14 @@ pub struct Cli {
     #[arg(long)]
     pub use_mongodb: bool,
 
+    /// MongoDB database name
+    #[arg(long, default_value = "bless", env = "MONGODB_DB")]
+    pub db: String,
+
+    /// MongoDB collection name
+    #[arg(long, default_value = "commands", env = "MONGODB_COLLECTION")]
+    pub collection: String,
+
     /// Force GridFS for the gzip blob even when it fits in a BSON document
     #[arg(long)]
     pub force_gridfs: bool,

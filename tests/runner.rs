@@ -6,6 +6,7 @@ mod tests {
 
     static CAPTURED: Mutex<Vec<String>> = Mutex::new(Vec::new());
     static LOGGER: Once = Once::new();
+    static MONGO_DEST_ENV: Mutex<()> = Mutex::new(());
 
     struct CaptureLogger;
 
@@ -242,5 +243,58 @@ mod tests {
             stderr.starts_with("bless:"),
             "stderr should start with bless:, got {stderr:?}"
         );
+    }
+
+    #[tokio::test]
+    async fn test_cli_mongo_dest_defaults() {
+        use bless::cli::Cli;
+        use clap::Parser;
+
+        let _guard = MONGO_DEST_ENV.lock().unwrap();
+        std::env::remove_var("MONGODB_DB");
+        std::env::remove_var("MONGODB_COLLECTION");
+        let cli = Cli::try_parse_from(["bless", "--use-mongodb", "--", "echo", "hi"]).unwrap();
+        assert_eq!(cli.db, "bless");
+        assert_eq!(cli.collection, "commands");
+    }
+
+    #[tokio::test]
+    async fn test_cli_mongo_dest_flags() {
+        use bless::cli::Cli;
+        use clap::Parser;
+
+        let _guard = MONGO_DEST_ENV.lock().unwrap();
+        std::env::set_var("MONGODB_DB", "fromenv");
+        std::env::set_var("MONGODB_COLLECTION", "fromenvcol");
+        let cli = Cli::try_parse_from([
+            "bless",
+            "--db",
+            "mydb",
+            "--collection",
+            "mycoll",
+            "--",
+            "echo",
+            "hi",
+        ])
+        .unwrap();
+        assert_eq!(cli.db, "mydb");
+        assert_eq!(cli.collection, "mycoll");
+        std::env::remove_var("MONGODB_DB");
+        std::env::remove_var("MONGODB_COLLECTION");
+    }
+
+    #[tokio::test]
+    async fn test_cli_mongo_dest_env() {
+        use bless::cli::Cli;
+        use clap::Parser;
+
+        let _guard = MONGO_DEST_ENV.lock().unwrap();
+        std::env::set_var("MONGODB_DB", "envdb");
+        std::env::set_var("MONGODB_COLLECTION", "envcoll");
+        let cli = Cli::try_parse_from(["bless", "--use-mongodb", "--", "echo", "hi"]).unwrap();
+        assert_eq!(cli.db, "envdb");
+        assert_eq!(cli.collection, "envcoll");
+        std::env::remove_var("MONGODB_DB");
+        std::env::remove_var("MONGODB_COLLECTION");
     }
 }
