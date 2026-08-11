@@ -171,8 +171,9 @@ db.getCollectionNames().forEach(c=>db[c].drop())
 
 ### Extracting run output
 
-Since the gzip is stored as binary data keyed to the entry, a small helper
-script is provided:
+A helper script writes the stored gzip to a file. Documents with
+`storage=gridfs` or `gzip_blob_id` are streamed from GridFS; otherwise the
+embedded `gzip_blob` Binary is used:
 
 ```bash
 python scripts/get_db_gzip.py --db-name local --collection-name commands --query-field args --query-value orca.inp

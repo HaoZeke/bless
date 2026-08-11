@@ -3,6 +3,10 @@ All notable changes to this project will be documented in this file. See [conven
 
 - - -
 ## Unreleased
+#### Bugfixes
+- Stream GridFS uploads from disk instead of buffering the gzip in memory
+#### Enhancements
+- get_db_gzip.py downloads GridFS blobs when storage is gridfs or gzip_blob_id is set
 #### Documentation
 - Drop public cf-ci references; use generic log-filtering examples
 - Align Sphinx/orgmode setup so RST is generated, not committed
