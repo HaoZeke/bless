@@ -31,6 +31,9 @@ All notable changes to this project will be documented in this file. See [conven
 #### CI
 - Release workflow for Zenodo DOI minting
 - Docs deploy path, write permissions, and CNAME for GitHub Pages
+- MSRV 1.74 cargo check --locked (default and --features serve)
+- cargo test --locked on the default matrix; cargo test --locked --features serve
+- contents: read on the CI workflow; apt-get update before capnproto
 
 - - -
 ## v0.2.0 - 2026-03-08
