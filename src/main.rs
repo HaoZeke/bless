@@ -92,8 +92,8 @@ async fn run(cli: Cli) -> Result<ExitStatus, BlessError> {
         let mongodb_storage = MongoDBStorage::new(&client, &cli.db, &cli.collection).await?;
         let args_joined = args.join(" ");
 
-        // One document per opened gzip. Combined runs insert once;
-        // --split inserts stdout then stderr, tagged with stream=.
+        // One document per opened gzip. Combined runs insert once with
+        // stream=""; --split inserts stdout then stderr.
         for file in &files {
             let params = SaveGzipBlobParams {
                 cmd: command,
@@ -102,7 +102,7 @@ async fn run(cli: Cli) -> Result<ExitStatus, BlessError> {
                 duration: &duration,
                 uuid: &run_uuid,
                 file_path: &file.path,
-                stream: file.stream,
+                stream: file.stream.or(Some("")),
                 start_time: start_time.into(),
                 end_time: end_time.into(),
             };
