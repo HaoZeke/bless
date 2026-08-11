@@ -2,7 +2,20 @@
 All notable changes to this project will be documented in this file. See [conventional commits](https://www.conventionalcommits.org/) for commit guidelines.
 
 - - -
+## Unreleased
+#### Documentation
+- Drop public cf-ci references; use generic log-filtering examples
+- Align Sphinx/orgmode setup so RST is generated, not committed
+- Site chrome: inline logo, author link, TurtleTech footer
+- Analytics: Plausible to Umami, plus Antics tracker; closed-path TurtleTech SVG
+#### CI
+- Release workflow for Zenodo DOI minting
+- Docs deploy path, write permissions, and CNAME for GitHub Pages
+
+- - -
 ## v0.2.0 - 2026-03-08
+#### Breaking
+- Clap 4 requires `--` before the wrapped command (`bless [OPTIONS] -- COMMAND [ARGS...]`)
 #### Bugfixes
 - Exit code passthrough: bless now returns the wrapped command's exit code (closes #7)
 - Version string from env!("CARGO_PKG_VERSION") instead of hardcoded (closes #26)
