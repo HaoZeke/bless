@@ -215,6 +215,11 @@ data-aria-dark="Switch to auto color mode">
 </span><span data-line="4">cargo<span class="w"> </span><span class="nb">test</span>
 </span></pre></div>
 </div>
+<p>For MongoDB persist development:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span data-line="1">cargo<span class="w"> </span>build<span class="w"> </span>--features<span class="w"> </span>mongodb
+</span><span data-line="2">cargo<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--features<span class="w"> </span>mongodb
+</span></pre></div>
+</div>
 <p>For serve mode development:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span data-line="1">cargo<span class="w"> </span>build<span class="w"> </span>--features<span class="w"> </span>serve
 </span></pre></div>
@@ -226,6 +231,8 @@ data-aria-dark="Switch to auto color mode">
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span data-line="1">cargo<span class="w"> </span>fmt<span class="w"> </span>--check
 </span><span data-line="2">cargo<span class="w"> </span>clippy<span class="w"> </span>--<span class="w"> </span>-D<span class="w"> </span>warnings
 </span><span data-line="3">cargo<span class="w"> </span><span class="nb">test</span>
+</span><span data-line="4">cargo<span class="w"> </span>clippy<span class="w"> </span>--features<span class="w"> </span>mongodb<span class="w"> </span>--<span class="w"> </span>-D<span class="w"> </span>warnings
+</span><span data-line="5">cargo<span class="w"> </span><span class="nb">test</span><span class="w"> </span>--features<span class="w"> </span>mongodb
 </span></pre></div>
 </div>
 </section>
@@ -238,10 +245,10 @@ data-aria-dark="Switch to auto color mode">
 </span><span data-line="5">  <span class="n">runner</span><span class="o">.</span><span class="n">rs</span>         <span class="o">--</span> <span class="n">Async</span> <span class="n">command</span> <span class="n">execution</span> <span class="p">(</span><span class="n">tokio</span><span class="p">::</span><span class="n">process</span><span class="p">)</span>
 </span><span data-line="6">  <span class="n">logger</span><span class="o">.</span><span class="n">rs</span>         <span class="o">--</span> <span class="n">Fern</span> <span class="n">logger</span> <span class="n">setup</span> <span class="k">with</span> <span class="nb">format</span> <span class="n">options</span>
 </span><span data-line="7">  <span class="n">lib</span><span class="o">.</span><span class="n">rs</span>            <span class="o">--</span> <span class="n">Module</span> <span class="n">declarations</span>
-</span><span data-line="8">  <span class="n">db</span><span class="o">.</span><span class="n">rs</span>             <span class="o">--</span> <span class="n">MongoDB</span> <span class="n">client</span> <span class="n">setup</span>
+</span><span data-line="8">  <span class="n">db</span><span class="o">.</span><span class="n">rs</span>             <span class="o">--</span> <span class="p">(</span><span class="n">feature</span> <span class="o">=</span> <span class="s2">&quot;mongodb&quot;</span><span class="p">)</span> <span class="n">MongoDB</span> <span class="n">client</span> <span class="n">setup</span>
 </span><span data-line="9">  <span class="n">storage_backends</span><span class="o">/</span>
 </span><span data-line="10">    <span class="n">gzip</span><span class="o">.</span><span class="n">rs</span>         <span class="o">--</span> <span class="n">GzipLogWrapper</span> <span class="p">(</span><span class="n">log</span><span class="p">::</span><span class="n">Log</span> <span class="n">impl</span><span class="p">)</span>
-</span><span data-line="11">    <span class="n">mongodb</span><span class="o">.</span><span class="n">rs</span>      <span class="o">--</span> <span class="n">MongoDB</span> <span class="n">blob</span> <span class="n">storage</span>
+</span><span data-line="11">    <span class="n">mongodb</span><span class="o">.</span><span class="n">rs</span>      <span class="o">--</span> <span class="p">(</span><span class="n">feature</span> <span class="o">=</span> <span class="s2">&quot;mongodb&quot;</span><span class="p">)</span> <span class="n">MongoDB</span> <span class="n">blob</span> <span class="n">storage</span>
 </span><span data-line="12">  <span class="n">rpc</span><span class="o">/</span>              <span class="o">--</span> <span class="p">(</span><span class="n">feature</span> <span class="o">=</span> <span class="s2">&quot;serve&quot;</span><span class="p">)</span>
 </span><span data-line="13">    <span class="n">mod</span><span class="o">.</span><span class="n">rs</span>
 </span><span data-line="14">    <span class="n">server</span><span class="o">.</span><span class="n">rs</span>       <span class="o">--</span> <span class="n">BlessServer</span> <span class="o">+</span> <span class="n">LogSink</span> <span class="n">impls</span>

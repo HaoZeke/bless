@@ -11,6 +11,20 @@ Overview
 ``bless`` can store compressed log blobs in MongoDB alongside metadata
 (command, duration, timestamps, label, ``run_uuid``).
 
+Requires building with the ``mongodb`` feature.
+
+Build with MongoDB support
+--------------------------
+
+.. code:: bash
+
+    cargo install bless --features mongodb
+    # or, from a checkout:
+    cargo build --release --features mongodb
+
+The default install (``cargo install bless``) is gzip-only and does not
+include ``--use-mongodb``.
+
 Prerequisites
 -------------
 

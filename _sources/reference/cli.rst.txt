@@ -23,49 +23,6 @@ Label for the run. Used in the output filename and MongoDB metadata.
 
 Default: ``default_label``
 
-``--use-mongodb``
-~~~~~~~~~~~~~~~~~
-
-Store the gzip log blob in MongoDB after the command finishes.
-
-Requires ``MONGODB_URI`` environment variable.
-
-Uploads the gzip file(s) the logger actually opened. Cannot be combined
-with ``-o -`` (no file to persist; config error). Every document writes
-``stream``: empty string for a combined run, or ``"stdout"`` / ``"stderr"``
-with ``--split`` (one document per stream, shared ``run_uuid``). Unique
-compound index is ``(run_uuid, stream)``.
-
-Without ``--split``, that gzip contains only ``INFO`` and ``WARN``. ``--split``
-does not apply that filter (stdout gzip is ``INFO`` and ``TRACE``, stderr
-gzip is ``WARN`` and ``ERROR``).
-
-Default destination is the ``commands`` collection in the ``bless``
-database.
-
-``--db <NAME>``
-~~~~~~~~~~~~~~~
-
-MongoDB database name. Default: ``bless``. Also reads ``MONGODB_DB``.
-
-Has no effect unless ``--use-mongodb`` is also set.
-
-``--collection <NAME>``
-~~~~~~~~~~~~~~~~~~~~~~~
-
-MongoDB collection name. Default: ``commands``. Also reads
-``MONGODB_COLLECTION``.
-
-Has no effect unless ``--use-mongodb`` is also set.
-
-``--force-gridfs``
-~~~~~~~~~~~~~~~~~~
-
-Upload the gzip blob via GridFS even when it fits in a BSON document.
-
-Has no effect unless ``--use-mongodb`` is also set. Blobs larger than 15 MiB
-already use GridFS automatically.
-
 ``--no-timestamp``
 ~~~~~~~~~~~~~~~~~~
 
@@ -116,6 +73,54 @@ Write separate gzip files for stdout and stderr:
 ~~~~~~~~~~~~~
 
 Print version and exit.
+
+MongoDB options
+---------------
+
+Available when built with ``--features mongodb``.
+
+``--use-mongodb``
+~~~~~~~~~~~~~~~~~
+
+Store the gzip log blob in MongoDB after the command finishes.
+
+Requires ``MONGODB_URI`` environment variable.
+
+Uploads the gzip file(s) the logger actually opened. Cannot be combined
+with ``-o -`` (no file to persist; config error). Every document writes
+``stream``: empty string for a combined run, or ``"stdout"`` / ``"stderr"``
+with ``--split`` (one document per stream, shared ``run_uuid``). Unique
+compound index is ``(run_uuid, stream)``.
+
+Without ``--split``, that gzip contains only ``INFO`` and ``WARN``. ``--split``
+does not apply that filter (stdout gzip is ``INFO`` and ``TRACE``, stderr
+gzip is ``WARN`` and ``ERROR``).
+
+Default destination is the ``commands`` collection in the ``bless``
+database.
+
+``--db <NAME>``
+~~~~~~~~~~~~~~~
+
+MongoDB database name. Default: ``bless``. Also reads ``MONGODB_DB``.
+
+Has no effect unless ``--use-mongodb`` is also set.
+
+``--collection <NAME>``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+MongoDB collection name. Default: ``commands``. Also reads
+``MONGODB_COLLECTION``.
+
+Has no effect unless ``--use-mongodb`` is also set.
+
+``--force-gridfs``
+~~~~~~~~~~~~~~~~~~
+
+Upload the gzip blob via GridFS even when it fits in a BSON document.
+
+Has no effect unless ``--use-mongodb`` is also set. Blobs larger than 15 MiB
+already use GridFS automatically.
 
 Serve mode options
 ------------------

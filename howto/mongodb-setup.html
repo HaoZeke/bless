@@ -106,6 +106,7 @@ data-aria-dark="Switch to auto color mode">
     </button>
     <div class="sy-scrollbar sy-rside-inner px-6 xl:top-16 xl:sticky xl:pl-0 pt-6 pb-4"><div class="localtoc"><h3>On this page</h3><ul>
 <li><a class="reference internal" href="#overview">Overview</a></li>
+<li><a class="reference internal" href="#build-with-mongodb-support">Build with MongoDB support</a></li>
 <li><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
 <li><a class="reference internal" href="#usage">Usage</a></li>
 <li><a class="reference internal" href="#querying-stored-runs">Querying stored runs</a></li>
@@ -213,6 +214,17 @@ data-aria-dark="Switch to auto color mode">
 <h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">bless</span></code> can store compressed log blobs in MongoDB alongside metadata
 (command, duration, timestamps, label, <code class="docutils literal notranslate"><span class="pre">run_uuid</span></code>).</p>
+<p>Requires building with the <code class="docutils literal notranslate"><span class="pre">mongodb</span></code> feature.</p>
+</section>
+<section id="build-with-mongodb-support">
+<h2>Build with MongoDB support<a class="headerlink" href="#build-with-mongodb-support" title="Link to this heading">¶</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span data-line="1">cargo<span class="w"> </span>install<span class="w"> </span>bless<span class="w"> </span>--features<span class="w"> </span>mongodb
+</span><span data-line="2"><span class="c1"># or, from a checkout:</span>
+</span><span data-line="3">cargo<span class="w"> </span>build<span class="w"> </span>--release<span class="w"> </span>--features<span class="w"> </span>mongodb
+</span></pre></div>
+</div>
+<p>The default install (<code class="docutils literal notranslate"><span class="pre">cargo</span> <span class="pre">install</span> <span class="pre">bless</span></code>) is gzip-only and does not
+include <code class="docutils literal notranslate"><span class="pre">--use-mongodb</span></code>.</p>
 </section>
 <section id="prerequisites">
 <h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading">¶</a></h2>
