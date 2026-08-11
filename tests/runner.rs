@@ -245,14 +245,32 @@ mod tests {
         );
     }
 
+    // SAFETY: caller holds MONGO_DEST_ENV. env::{set,remove}_var is unsafe
+    // on rustc 1.87+.
+    #[allow(unused_unsafe)]
+    unsafe fn set_mongo_dest_env(db: Option<&str>, collection: Option<&str>) {
+        unsafe {
+            match db {
+                Some(v) => std::env::set_var("MONGODB_DB", v),
+                None => std::env::remove_var("MONGODB_DB"),
+            }
+            match collection {
+                Some(v) => std::env::set_var("MONGODB_COLLECTION", v),
+                None => std::env::remove_var("MONGODB_COLLECTION"),
+            }
+        }
+    }
+
     #[tokio::test]
     async fn test_cli_mongo_dest_defaults() {
         use bless::cli::Cli;
         use clap::Parser;
 
         let _guard = MONGO_DEST_ENV.lock().unwrap();
-        std::env::remove_var("MONGODB_DB");
-        std::env::remove_var("MONGODB_COLLECTION");
+        // SAFETY: exclusive MONGO_DEST_ENV lock.
+        unsafe {
+            set_mongo_dest_env(None, None);
+        }
         let cli = Cli::try_parse_from(["bless", "--use-mongodb", "--", "echo", "hi"]).unwrap();
         assert_eq!(cli.db, "bless");
         assert_eq!(cli.collection, "commands");
@@ -264,8 +282,10 @@ mod tests {
         use clap::Parser;
 
         let _guard = MONGO_DEST_ENV.lock().unwrap();
-        std::env::set_var("MONGODB_DB", "fromenv");
-        std::env::set_var("MONGODB_COLLECTION", "fromenvcol");
+        // SAFETY: exclusive MONGO_DEST_ENV lock.
+        unsafe {
+            set_mongo_dest_env(Some("fromenv"), Some("fromenvcol"));
+        }
         let cli = Cli::try_parse_from([
             "bless",
             "--db",
@@ -279,8 +299,10 @@ mod tests {
         .unwrap();
         assert_eq!(cli.db, "mydb");
         assert_eq!(cli.collection, "mycoll");
-        std::env::remove_var("MONGODB_DB");
-        std::env::remove_var("MONGODB_COLLECTION");
+        // SAFETY: exclusive MONGO_DEST_ENV lock.
+        unsafe {
+            set_mongo_dest_env(None, None);
+        }
     }
 
     #[tokio::test]
@@ -289,12 +311,16 @@ mod tests {
         use clap::Parser;
 
         let _guard = MONGO_DEST_ENV.lock().unwrap();
-        std::env::set_var("MONGODB_DB", "envdb");
-        std::env::set_var("MONGODB_COLLECTION", "envcoll");
+        // SAFETY: exclusive MONGO_DEST_ENV lock.
+        unsafe {
+            set_mongo_dest_env(Some("envdb"), Some("envcoll"));
+        }
         let cli = Cli::try_parse_from(["bless", "--use-mongodb", "--", "echo", "hi"]).unwrap();
         assert_eq!(cli.db, "envdb");
         assert_eq!(cli.collection, "envcoll");
-        std::env::remove_var("MONGODB_DB");
-        std::env::remove_var("MONGODB_COLLECTION");
+        // SAFETY: exclusive MONGO_DEST_ENV lock.
+        unsafe {
+            set_mongo_dest_env(None, None);
+        }
     }
 }
