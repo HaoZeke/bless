@@ -1,7 +1,7 @@
 use clap::{Parser, ValueEnum};
 
 #[derive(Debug, Clone, ValueEnum, Default)]
-pub enum OutputFormat {
+pub(crate) enum OutputFormat {
     #[default]
     Log,
     Jsonl,
@@ -9,7 +9,7 @@ pub enum OutputFormat {
 
 #[derive(Parser, Debug)]
 #[command(name = "bless", version = env!("CARGO_PKG_VERSION"), about = "Runs a command and logs output with metadata tracking")]
-pub struct Cli {
+pub(crate) struct Cli {
     /// Label for the run
     #[arg(long, default_value = "default_label")]
     pub label: String,
@@ -92,5 +92,245 @@ impl Cli {
             return Some("-");
         }
         self.output.as_deref()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::Cli;
+    use clap::Parser;
+
+    #[cfg(feature = "mongodb")]
+    static MONGO_DEST_ENV: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+    #[test]
+    fn parse_basic() {
+        let cli = Cli::try_parse_from(["bless", "--label", "test", "--", "echo", "hi"]);
+        assert!(cli.is_ok());
+        let cli = cli.unwrap();
+        assert_eq!(cli.label, "test");
+        assert_eq!(cli.command, vec!["echo", "hi"]);
+        assert!(!cli.no_timestamp);
+        assert!(!cli.split);
+        #[cfg(feature = "mongodb")]
+        assert!(!cli.force_gridfs);
+    }
+
+    #[test]
+    fn parse_all_flags() {
+        let cli = Cli::try_parse_from([
+            "bless",
+            "--label",
+            "myrun",
+            "--no-timestamp",
+            "--format",
+            "jsonl",
+            "--split",
+            "-o",
+            "/tmp/out.log.gz",
+            "--",
+            "make",
+            "-j8",
+        ]);
+        assert!(cli.is_ok());
+        let cli = cli.unwrap();
+        assert_eq!(cli.label, "myrun");
+        assert!(cli.no_timestamp);
+        assert!(cli.split);
+        assert_eq!(cli.output, Some("/tmp/out.log.gz".into()));
+        assert_eq!(cli.command, vec!["make", "-j8"]);
+    }
+
+    #[cfg(feature = "mongodb")]
+    #[test]
+    fn parse_force_gridfs() {
+        let cli = Cli::try_parse_from([
+            "bless",
+            "--use-mongodb",
+            "--force-gridfs",
+            "--",
+            "echo",
+            "hi",
+        ]);
+        assert!(cli.is_ok());
+        let cli = cli.unwrap();
+        assert!(cli.use_mongodb);
+        assert!(cli.force_gridfs);
+        assert_eq!(cli.command, vec!["echo", "hi"]);
+    }
+
+    #[cfg(not(feature = "mongodb"))]
+    #[test]
+    fn rejects_mongodb_flags_without_feature() {
+        assert!(Cli::try_parse_from(["bless", "--use-mongodb", "--", "echo", "hi"]).is_err());
+        assert!(Cli::try_parse_from(["bless", "--force-gridfs", "--", "echo", "hi"]).is_err());
+        assert!(Cli::try_parse_from(["bless", "--db", "x", "--", "echo", "hi"]).is_err());
+        assert!(Cli::try_parse_from(["bless", "--collection", "x", "--", "echo", "hi"]).is_err());
+    }
+
+    #[test]
+    fn requires_command() {
+        let cli = Cli::try_parse_from(["bless"]);
+        assert!(cli.is_err());
+    }
+
+    #[cfg(feature = "serve")]
+    #[test]
+    fn serve_without_command() {
+        let cli = Cli::try_parse_from(["bless", "--serve", ":9000"]);
+        assert!(cli.is_ok());
+        let cli = cli.unwrap();
+        assert_eq!(cli.serve.as_deref(), Some(":9000"));
+        assert!(cli.command.is_empty());
+        assert!(cli.remote.is_none());
+    }
+
+    #[cfg(feature = "serve")]
+    #[test]
+    fn serve_conflicts_with_remote() {
+        let cli = Cli::try_parse_from([
+            "bless", "--serve", ":9000", "--remote", ":9001", "--", "true",
+        ]);
+        assert!(cli.is_err());
+    }
+
+    #[cfg(all(feature = "serve", feature = "mongodb"))]
+    #[test]
+    fn serve_conflicts_with_mongodb() {
+        let cli = Cli::try_parse_from(["bless", "--serve", ":9000", "--use-mongodb"]);
+        assert!(cli.is_err());
+    }
+
+    #[cfg(feature = "serve")]
+    #[test]
+    fn local_requires_remote() {
+        let cli = Cli::try_parse_from(["bless", "--local", "--", "true"]);
+        assert!(cli.is_err());
+    }
+
+    #[cfg(feature = "serve")]
+    #[test]
+    fn remote_requires_command() {
+        let cli = Cli::try_parse_from(["bless", "--remote", ":9000"]);
+        assert!(cli.is_err());
+
+        let cli = Cli::try_parse_from(["bless", "--remote", ":9000", "--", "echo", "hi"]);
+        assert!(cli.is_ok());
+        let cli = cli.unwrap();
+        assert_eq!(cli.remote.as_deref(), Some(":9000"));
+        assert_eq!(cli.command, vec!["echo", "hi"]);
+        assert!(!cli.local);
+    }
+
+    #[cfg(feature = "serve")]
+    #[test]
+    fn remote_without_local_skips_default_gzip() {
+        let cli = Cli::try_parse_from(["bless", "--remote", ":9", "--", "true"]).unwrap();
+        assert_eq!(cli.gzip_output(), Some("-"));
+        assert!(cli.output.is_none());
+    }
+
+    #[cfg(feature = "serve")]
+    #[test]
+    fn remote_with_local_uses_default_gzip() {
+        let cli =
+            Cli::try_parse_from(["bless", "--remote", ":9", "--local", "--", "true"]).unwrap();
+        assert_eq!(cli.gzip_output(), None);
+        assert!(cli.local);
+    }
+
+    #[cfg(feature = "serve")]
+    #[test]
+    fn remote_with_dash_o_keeps_path() {
+        let cli =
+            Cli::try_parse_from(["bless", "--remote", ":9", "-o", "x.gz", "--", "true"]).unwrap();
+        assert_eq!(cli.gzip_output(), Some("x.gz"));
+        assert!(!cli.local);
+    }
+
+    #[cfg(feature = "mongodb")]
+    #[test]
+    fn parses_mongodb_with_dash_output() {
+        // Clap accepts the combination; persist rejects it as BlessError::Config
+        // because -o - opens no gzip to upload.
+        let cli = Cli::try_parse_from(["bless", "--use-mongodb", "-o", "-", "--", "echo", "hi"]);
+        assert!(cli.is_ok());
+        let cli = cli.unwrap();
+        assert!(cli.use_mongodb);
+        assert_eq!(cli.output.as_deref(), Some("-"));
+    }
+
+    // SAFETY: caller holds MONGO_DEST_ENV. env::{set,remove}_var is unsafe
+    // on rustc 1.87+.
+    #[cfg(feature = "mongodb")]
+    #[allow(unused_unsafe)]
+    unsafe fn set_mongo_dest_env(db: Option<&str>, collection: Option<&str>) {
+        unsafe {
+            match db {
+                Some(v) => std::env::set_var("MONGODB_DB", v),
+                None => std::env::remove_var("MONGODB_DB"),
+            }
+            match collection {
+                Some(v) => std::env::set_var("MONGODB_COLLECTION", v),
+                None => std::env::remove_var("MONGODB_COLLECTION"),
+            }
+        }
+    }
+
+    #[cfg(feature = "mongodb")]
+    #[test]
+    fn mongo_dest_defaults() {
+        let _guard = MONGO_DEST_ENV.lock().unwrap();
+        // SAFETY: exclusive MONGO_DEST_ENV lock.
+        unsafe {
+            set_mongo_dest_env(None, None);
+        }
+        let cli = Cli::try_parse_from(["bless", "--use-mongodb", "--", "echo", "hi"]).unwrap();
+        assert_eq!(cli.db, "bless");
+        assert_eq!(cli.collection, "commands");
+    }
+
+    #[cfg(feature = "mongodb")]
+    #[test]
+    fn mongo_dest_flags() {
+        let _guard = MONGO_DEST_ENV.lock().unwrap();
+        // SAFETY: exclusive MONGO_DEST_ENV lock.
+        unsafe {
+            set_mongo_dest_env(Some("fromenv"), Some("fromenvcol"));
+        }
+        let cli = Cli::try_parse_from([
+            "bless",
+            "--db",
+            "mydb",
+            "--collection",
+            "mycoll",
+            "--",
+            "echo",
+            "hi",
+        ])
+        .unwrap();
+        assert_eq!(cli.db, "mydb");
+        assert_eq!(cli.collection, "mycoll");
+        // SAFETY: exclusive MONGO_DEST_ENV lock.
+        unsafe {
+            set_mongo_dest_env(None, None);
+        }
+    }
+
+    #[cfg(feature = "mongodb")]
+    #[test]
+    fn mongo_dest_env() {
+        let _guard = MONGO_DEST_ENV.lock().unwrap();
+        // SAFETY: exclusive MONGO_DEST_ENV lock.
+        unsafe {
+            set_mongo_dest_env(Some("envdb"), Some("envcoll"));
+        }
+        let cli = Cli::try_parse_from(["bless", "--use-mongodb", "--", "echo", "hi"]).unwrap();
+        assert_eq!(cli.db, "envdb");
+        assert_eq!(cli.collection, "envcoll");
+        // SAFETY: exclusive MONGO_DEST_ENV lock.
+        unsafe {
+            set_mongo_dest_env(None, None);
+        }
     }
 }

@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file. See [conven
 ## Unreleased
 #### Breaking
 - Default `cargo install bless` is gzip-only; `--use-mongodb` requires `--features mongodb`
+- Crate is a CLI, not a stable library; only `run`, `BlessError`, and `runner` stay public
 #### Bugfixes
 - `--serve :port` binds `127.0.0.1`, not `0.0.0.0`
 - Sanitize session label/uuid; finish the gzip and evict the session on close
@@ -20,6 +21,8 @@ All notable changes to this project will be documented in this file. See [conven
 - `--use-mongodb --split` stores one document per stream (`stream: stdout|stderr`); combined runs write `stream: ""`
 - Persist to `bless.commands` by default; `--db`/`--collection` or `MONGODB_DB`/`MONGODB_COLLECTION` override
 - Do not list all databases on persist
+#### Refactoring
+- Hide `cli`, `db`, `logger`, `rpc`, `serve`, `storage_backends`, and generated `bless_log_capnp`
 #### Enhancements
 - Optional `mongodb` feature gates the MongoDB client, `--use-mongodb`, and related flags
 - `--serve ADDR` runs the server without a dummy command
