@@ -5,10 +5,7 @@ pub mod db;
 pub mod error;
 pub mod logger;
 pub mod runner;
-pub mod storage_backends {
-    pub mod gzip;
-    pub mod mongodb;
-}
+pub mod storage_backends;
 
 #[cfg(feature = "serve")]
 #[allow(clippy::all, unused_parens)]
