@@ -6,6 +6,7 @@ use bless::runner::{exit_code_from_status, run_command};
 use bless::storage_backends::mongodb::{MongoDBStorage, SaveGzipBlobParams};
 use clap::Parser;
 use log::{error, trace};
+use std::error::Error;
 use std::process::{ExitCode, ExitStatus};
 use uuid::Uuid;
 
@@ -15,6 +16,12 @@ fn main() -> ExitCode {
         Ok(status) => ExitCode::from(exit_code_from_status(status)),
         Err(e) => {
             eprintln!("bless: {e}");
+            if let Some(source) = e.source() {
+                let extra = source.to_string();
+                if !extra.is_empty() && !e.to_string().contains(extra.as_str()) {
+                    eprintln!("bless: {source}");
+                }
+            }
             ExitCode::FAILURE
         }
     }
