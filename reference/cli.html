@@ -246,6 +246,9 @@ with <code class="docutils literal notranslate"><span class="pre">-o</span> <spa
 <code class="docutils literal notranslate"><span class="pre">stream</span></code>: empty string for a combined run, or <code class="docutils literal notranslate"><span class="pre">&quot;stdout&quot;</span></code> / <code class="docutils literal notranslate"><span class="pre">&quot;stderr&quot;</span></code>
 with <code class="docutils literal notranslate"><span class="pre">--split</span></code> (one document per stream, shared <code class="docutils literal notranslate"><span class="pre">run_uuid</span></code>). Unique
 compound index is <code class="docutils literal notranslate"><span class="pre">(run_uuid,</span> <span class="pre">stream)</span></code>.</p>
+<p>Without <code class="docutils literal notranslate"><span class="pre">--split</span></code>, that gzip contains only <code class="docutils literal notranslate"><span class="pre">INFO</span></code> and <code class="docutils literal notranslate"><span class="pre">WARN</span></code>. <code class="docutils literal notranslate"><span class="pre">--split</span></code>
+does not apply that filter (stdout gzip is <code class="docutils literal notranslate"><span class="pre">INFO</span></code> and <code class="docutils literal notranslate"><span class="pre">TRACE</span></code>, stderr
+gzip is <code class="docutils literal notranslate"><span class="pre">WARN</span></code> and <code class="docutils literal notranslate"><span class="pre">ERROR</span></code>).</p>
 <p>Default destination is the <code class="docutils literal notranslate"><span class="pre">commands</span></code> collection in the <code class="docutils literal notranslate"><span class="pre">bless</span></code>
 database.</p>
 </section>
@@ -268,9 +271,11 @@ already use GridFS automatically.</p>
 </section>
 <section id="no-timestamp">
 <h3><code class="docutils literal notranslate"><span class="pre">--no-timestamp</span></code><a class="headerlink" href="#no-timestamp" title="Link to this heading">¶</a></h3>
-<p>Omit timestamps from stdout output. The gzip file still includes full
+<p>Omit timestamps from stdout when <code class="docutils literal notranslate"><span class="pre">--format=log</span></code> (the default). JSONL
+stdout always includes <code class="docutils literal notranslate"><span class="pre">ts</span></code>. The gzip file still includes full
 timestamps.</p>
-<p>Useful for piping to downstream tools that expect clean output.</p>
+<p>Useful for piping <code class="docutils literal notranslate"><span class="pre">--format=log</span></code> output to downstream tools that expect
+clean lines.</p>
 </section>
 <section id="format-format">
 <h3><code class="docutils literal notranslate"><span class="pre">--format</span> <span class="pre">&lt;FORMAT&gt;</span></code><a class="headerlink" href="#format-format" title="Link to this heading">¶</a></h3>
@@ -287,8 +292,9 @@ timestamps.</p>
 <p>Special values:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">-</span></code>: skip file output entirely (stdout only)</p></li>
-<li><p>Path not ending in <code class="docutils literal notranslate"><span class="pre">.gz</span></code>: write plain text (no compression)</p></li>
 </ul>
+<p>Any other path is gzip-compressed, including names that do not end in
+<code class="docutils literal notranslate"><span class="pre">.gz</span></code>. There is no plain-text file backend.</p>
 </section>
 <section id="split">
 <h3><code class="docutils literal notranslate"><span class="pre">--split</span></code><a class="headerlink" href="#split" title="Link to this heading">¶</a></h3>

@@ -228,7 +228,9 @@ Cap’n Proto RPC. The server writes per-session gzip files and maintains an ind
 <p><code class="docutils literal notranslate"><span class="pre">:5678</span></code> binds <code class="docutils literal notranslate"><span class="pre">127.0.0.1:5678</span></code>, not all interfaces. Pass an explicit
 address such as <code class="docutils literal notranslate"><span class="pre">0.0.0.0:5678</span></code> or <code class="docutils literal notranslate"><span class="pre">192.168.1.10:5678</span></code> to listen elsewhere.
 No dummy command is required.</p>
-<p>The server stores sessions in <code class="docutils literal notranslate"><span class="pre">~/.local/share/bless/sessions/</span></code>.</p>
+<p>Session data is stored under <code class="docutils literal notranslate"><span class="pre">$XDG_DATA_HOME/bless/sessions/</span></code> (or
+<code class="docutils literal notranslate"><span class="pre">$HOME/.local/share/bless/sessions/</span></code>). If neither variable is set, the
+server uses <code class="docutils literal notranslate"><span class="pre">.bless_sessions</span></code> in the working directory.</p>
 </section>
 <section id="stream-from-a-client">
 <h2>Stream from a client<a class="headerlink" href="#stream-from-a-client" title="Link to this heading">¶</a></h2>
@@ -244,11 +246,9 @@ No dummy command is required.</p>
 </section>
 <section id="session-files">
 <h2>Session files<a class="headerlink" href="#session-files" title="Link to this heading">¶</a></h2>
-<p>Each session produces:</p>
-<ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">{label}_{uuid}.log.gz</span></code> – compressed log with timestamps</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">index.json</span></code> – append-only JSONL with session metadata</p></li>
-</ul>
+<p>Each session writes <code class="docutils literal notranslate"><span class="pre">{label}_{uuid}.log.gz</span></code> under the data directory.
+The server appends one JSON object per closed session to a shared
+<code class="docutils literal notranslate"><span class="pre">index.json</span></code> in that directory.</p>
 </section>
 <section id="architecture">
 <h2>Architecture<a class="headerlink" href="#architecture" title="Link to this heading">¶</a></h2>
@@ -257,7 +257,7 @@ No dummy command is required.</p>
 </span><span data-line="3">  <span class="o">|--</span> <span class="n">openSession</span><span class="p">(</span><span class="n">meta</span><span class="p">)</span> <span class="o">----&gt;|</span>
 </span><span data-line="4">  <span class="o">|&lt;----</span> <span class="n">LogSink</span> <span class="n">capability</span> <span class="o">-|</span>
 </span><span data-line="5">  <span class="o">|</span>                          <span class="o">|</span>
-</span><span data-line="6">  <span class="o">|--</span> <span class="n">writeBatch</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="o">----&gt;|</span>  <span class="p">(</span><span class="n">batched</span><span class="p">,</span> <span class="n">every</span> <span class="mi">64</span> <span class="n">lines</span> <span class="ow">or</span> <span class="mi">100</span><span class="n">ms</span><span class="p">)</span>
+</span><span data-line="6">  <span class="o">|--</span> <span class="n">writeBatch</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="o">----&gt;|</span>  <span class="p">(</span><span class="n">flushed</span> <span class="n">every</span> <span class="mi">100</span><span class="n">ms</span><span class="p">)</span>
 </span><span data-line="7">  <span class="o">|--</span> <span class="n">writeBatch</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="o">----&gt;|</span>
 </span><span data-line="8">  <span class="o">|</span>                          <span class="o">|</span>
 </span><span data-line="9">  <span class="o">|--</span> <span class="n">close</span><span class="p">(</span><span class="n">exit</span><span class="p">,</span> <span class="n">dur</span><span class="p">)</span> <span class="o">-----&gt;|</span>  <span class="p">(</span><span class="n">finalizes</span> <span class="n">gzip</span><span class="p">,</span> <span class="n">writes</span> <span class="n">index</span><span class="p">)</span>

@@ -255,7 +255,9 @@ data-aria-dark="Switch to auto color mode">
 </section>
 <section id="no-timestamp-format-no-timestamp">
 <h2>No-timestamp format (<code class="docutils literal notranslate"><span class="pre">--no-timestamp</span></code>)<a class="headerlink" href="#no-timestamp-format-no-timestamp" title="Link to this heading">¶</a></h2>
-<p>Stdout only (gzip file keeps timestamps):</p>
+<p>Applies only to stdout with <code class="docutils literal notranslate"><span class="pre">--format=log</span></code>. JSONL stdout always includes
+<code class="docutils literal notranslate"><span class="pre">ts</span></code>. Gzip keeps timestamps either way.</p>
+<p>Stdout:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span data-line="1"><span class="p">[</span><span class="n">LEVEL</span><span class="p">]</span> <span class="n">MESSAGE</span>
 </span></pre></div>
 </div>
@@ -263,14 +265,15 @@ data-aria-dark="Switch to auto color mode">
 <section id="gzip-file">
 <h2>Gzip file<a class="headerlink" href="#gzip-file" title="Link to this heading">¶</a></h2>
 <p>The gzip file always uses the default format with full timestamps, regardless
-of <code class="docutils literal notranslate"><span class="pre">--format</span></code> or <code class="docutils literal notranslate"><span class="pre">--no-timestamp</span></code> settings. This ensures the archival record
-is always complete.</p>
+of <code class="docutils literal notranslate"><span class="pre">--format</span></code> or <code class="docutils literal notranslate"><span class="pre">--no-timestamp</span></code> settings. Combined <code class="docutils literal notranslate"><span class="pre">--use-mongodb</span></code> runs
+still omit <code class="docutils literal notranslate"><span class="pre">TRACE</span></code> and <code class="docutils literal notranslate"><span class="pre">ERROR</span></code> from that file.</p>
 </section>
 <section id="internal-log-lines">
 <h2>Internal log lines<a class="headerlink" href="#internal-log-lines" title="Link to this heading">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">bless</span></code> adds these internal lines:</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">TRACE</span></code> level: label, UUID, and duration at start/end</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">TRACE</span></code> level: label and UUID at start. Duration at end only when
+<code class="docutils literal notranslate"><span class="pre">--use-mongodb</span></code> is not set</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">ERROR</span></code> level: command failure messages</p></li>
 </ul>
 </section>

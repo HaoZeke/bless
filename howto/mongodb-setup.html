@@ -109,7 +109,7 @@ data-aria-dark="Switch to auto color mode">
 <li><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
 <li><a class="reference internal" href="#usage">Usage</a></li>
 <li><a class="reference internal" href="#querying-stored-runs">Querying stored runs</a></li>
-<li><a class="reference internal" href="#filtering-by-mongodb-mode">Filtering by MongoDB mode</a></li>
+<li><a class="reference internal" href="#gzip-contents-with-use-mongodb">Gzip contents with <code class="docutils literal notranslate"><span class="pre">--use-mongodb</span></code></a></li>
 <li><a class="reference internal" href="#how-the-blob-is-stored">How the blob is stored</a></li>
 <li><a class="reference internal" href="#extracting-a-stored-log">Extracting a stored log</a></li>
 </ul>
@@ -211,8 +211,8 @@ data-aria-dark="Switch to auto color mode">
 </div></blockquote>
 <section id="overview">
 <h2>Overview<a class="headerlink" href="#overview" title="Link to this heading">¶</a></h2>
-<p><code class="docutils literal notranslate"><span class="pre">bless</span></code> can store compressed log blobs in MongoDB alongside metadata (command,
-duration, timestamps, label, UUID).</p>
+<p><code class="docutils literal notranslate"><span class="pre">bless</span></code> can store compressed log blobs in MongoDB alongside metadata
+(command, duration, timestamps, label, <code class="docutils literal notranslate"><span class="pre">run_uuid</span></code>).</p>
 </section>
 <section id="prerequisites">
 <h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading">¶</a></h2>
@@ -246,15 +246,18 @@ non-unique index.</p>
 </section>
 <section id="querying-stored-runs">
 <h2>Querying stored runs<a class="headerlink" href="#querying-stored-runs" title="Link to this heading">¶</a></h2>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span data-line="1">mongosh<span class="w"> </span>--eval<span class="w"> </span><span class="s1">&#39;db.commands.find({label: &quot;nightly-build&quot;}).sort({start_time: -1}).limit(5)&#39;</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span data-line="1">mongosh<span class="w"> </span>--eval<span class="w"> </span><span class="s1">&#39;db.getSiblingDB(&quot;bless&quot;).commands.find({label: &quot;nightly-build&quot;}).sort({start_time: -1}).limit(5)&#39;</span>
 </span></pre></div>
 </div>
 </section>
-<section id="filtering-by-mongodb-mode">
-<h2>Filtering by MongoDB mode<a class="headerlink" href="#filtering-by-mongodb-mode" title="Link to this heading">¶</a></h2>
-<p>When <code class="docutils literal notranslate"><span class="pre">--use-mongodb</span></code> is set, the gzip file only captures INFO and WARN levels
-(not TRACE). This reduces storage for production use. Stdout still shows all
-levels.</p>
+<section id="gzip-contents-with-use-mongodb">
+<h2>Gzip contents with <code class="docutils literal notranslate"><span class="pre">--use-mongodb</span></code><a class="headerlink" href="#gzip-contents-with-use-mongodb" title="Link to this heading">¶</a></h2>
+<p>Without <code class="docutils literal notranslate"><span class="pre">--split</span></code>, the gzip persisted to MongoDB contains only <code class="docutils literal notranslate"><span class="pre">INFO</span></code> and
+<code class="docutils literal notranslate"><span class="pre">WARN</span></code> (command stdout and stderr). <code class="docutils literal notranslate"><span class="pre">TRACE</span></code> and <code class="docutils literal notranslate"><span class="pre">ERROR</span></code> are omitted from
+that file. Stdout still shows all levels.</p>
+<p>With <code class="docutils literal notranslate"><span class="pre">--split</span></code>, there is no extra filter: the stdout gzip is <code class="docutils literal notranslate"><span class="pre">INFO</span></code> and
+<code class="docutils literal notranslate"><span class="pre">TRACE</span></code>, the stderr gzip is <code class="docutils literal notranslate"><span class="pre">WARN</span></code> and <code class="docutils literal notranslate"><span class="pre">ERROR</span></code>, and both documents are
+stored.</p>
 </section>
 <section id="how-the-blob-is-stored">
 <h2>How the blob is stored<a class="headerlink" href="#how-the-blob-is-stored" title="Link to this heading">¶</a></h2>

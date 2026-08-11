@@ -36,6 +36,10 @@ with ``-o -`` (no file to persist; config error). Every document writes
 with ``--split`` (one document per stream, shared ``run_uuid``). Unique
 compound index is ``(run_uuid, stream)``.
 
+Without ``--split``, that gzip contains only ``INFO`` and ``WARN``. ``--split``
+does not apply that filter (stdout gzip is ``INFO`` and ``TRACE``, stderr
+gzip is ``WARN`` and ``ERROR``).
+
 Default destination is the ``commands`` collection in the ``bless``
 database.
 
@@ -65,10 +69,12 @@ already use GridFS automatically.
 ``--no-timestamp``
 ~~~~~~~~~~~~~~~~~~
 
-Omit timestamps from stdout output. The gzip file still includes full
+Omit timestamps from stdout when ``--format=log`` (the default). JSONL
+stdout always includes ``ts``. The gzip file still includes full
 timestamps.
 
-Useful for piping to downstream tools that expect clean output.
+Useful for piping ``--format=log`` output to downstream tools that expect
+clean lines.
 
 ``--format <FORMAT>``
 ~~~~~~~~~~~~~~~~~~~~~
@@ -90,7 +96,8 @@ Special values:
 
 - ``-``: skip file output entirely (stdout only)
 
-- Path not ending in ``.gz``: write plain text (no compression)
+Any other path is gzip-compressed, including names that do not end in
+``.gz``. There is no plain-text file backend.
 
 ``--split``
 ~~~~~~~~~~~
