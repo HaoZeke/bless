@@ -21,6 +21,13 @@ Store the gzip log blob in MongoDB after the command finishes.
 
 Requires =MONGODB_URI= environment variable.
 
+** =--force-gridfs=
+
+Upload the gzip blob via GridFS even when it fits in a BSON document.
+
+Has no effect unless =--use-mongodb= is also set. Blobs larger than 15 MiB
+already use GridFS automatically.
+
 ** =--no-timestamp=
 
 Omit timestamps from stdout output. The gzip file still includes full

@@ -108,7 +108,9 @@ async fn run(cli: Cli) -> Result<ExitStatus, BlessError> {
             end_time: end_time.into(),
         };
 
-        mongodb_storage.save_gzip_blob(params).await?;
+        mongodb_storage
+            .save_gzip_blob(params, cli.force_gridfs)
+            .await?;
     }
 
     Ok(status)

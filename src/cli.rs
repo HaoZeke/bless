@@ -18,6 +18,10 @@ pub struct Cli {
     #[arg(long)]
     pub use_mongodb: bool,
 
+    /// Force GridFS for the gzip blob even when it fits in a BSON document
+    #[arg(long)]
+    pub force_gridfs: bool,
+
     /// Omit timestamps from stdout (gzip file keeps them)
     #[arg(long)]
     pub no_timestamp: bool,

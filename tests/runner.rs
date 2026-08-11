@@ -56,6 +56,7 @@ mod tests {
         assert_eq!(cli.command, vec!["echo", "hi"]);
         assert!(!cli.no_timestamp);
         assert!(!cli.split);
+        assert!(!cli.force_gridfs);
     }
 
     #[tokio::test]
@@ -84,6 +85,26 @@ mod tests {
         assert!(cli.split);
         assert_eq!(cli.output, Some("/tmp/out.log.gz".into()));
         assert_eq!(cli.command, vec!["make", "-j8"]);
+    }
+
+    #[tokio::test]
+    async fn test_cli_parse_force_gridfs() {
+        use bless::cli::Cli;
+        use clap::Parser;
+
+        let cli = Cli::try_parse_from([
+            "bless",
+            "--use-mongodb",
+            "--force-gridfs",
+            "--",
+            "echo",
+            "hi",
+        ]);
+        assert!(cli.is_ok());
+        let cli = cli.unwrap();
+        assert!(cli.use_mongodb);
+        assert!(cli.force_gridfs);
+        assert_eq!(cli.command, vec!["echo", "hi"]);
     }
 
     #[tokio::test]
