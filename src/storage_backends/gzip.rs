@@ -72,3 +72,49 @@ impl Clone for GzipLogWrapper {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use flate2::read::GzDecoder;
+    use log::{Level, Record};
+    use std::io::Read;
+
+    #[test]
+    fn finish_then_gunzip_yields_timestamped_level_line() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("wrap.log.gz");
+        let wrapper = GzipLogWrapper::new(path.to_str().unwrap()).unwrap();
+
+        wrapper.log(
+            &Record::builder()
+                .args(format_args!("hello-gzip"))
+                .level(Level::Info)
+                .target("bless")
+                .module_path(Some("bless"))
+                .file(Some("gzip.rs"))
+                .line(Some(1))
+                .build(),
+        );
+        wrapper.finish().unwrap();
+
+        let mut text = String::new();
+        GzDecoder::new(File::open(&path).unwrap())
+            .read_to_string(&mut text)
+            .unwrap();
+        let line = text.lines().next().expect("expected a log line");
+
+        let rest = line
+            .strip_prefix('[')
+            .and_then(|s| s.split_once("] "))
+            .expect("expected [timestamp LEVEL] msg");
+        let (inside, msg) = rest;
+        let mut parts = inside.split_whitespace();
+        let ts = parts.next().expect("timestamp");
+        let level = parts.next().expect("LEVEL");
+        assert!(parts.next().is_none(), "extra fields inside brackets: {inside}");
+        assert!(ts.contains('T'), "rfc3339 timestamp: {ts}");
+        assert_eq!(level, "INFO");
+        assert_eq!(msg, "hello-gzip");
+    }
+}
