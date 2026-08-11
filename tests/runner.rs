@@ -1,6 +1,36 @@
 #[cfg(test)]
 mod tests {
+    use std::sync::{Mutex, Once};
+
     use bless::runner::run_command;
+
+    static CAPTURED: Mutex<Vec<String>> = Mutex::new(Vec::new());
+    static LOGGER: Once = Once::new();
+
+    struct CaptureLogger;
+
+    impl log::Log for CaptureLogger {
+        fn enabled(&self, _metadata: &log::Metadata) -> bool {
+            true
+        }
+
+        fn log(&self, record: &log::Record) {
+            CAPTURED.lock().unwrap().push(record.args().to_string());
+        }
+
+        fn flush(&self) {}
+    }
+
+    fn init_capture_logger() {
+        LOGGER.call_once(|| {
+            let _ = log::set_boxed_logger(Box::new(CaptureLogger));
+            log::set_max_level(log::LevelFilter::Info);
+        });
+    }
+
+    fn captured_lines() -> Vec<String> {
+        CAPTURED.lock().unwrap().clone()
+    }
 
     #[tokio::test]
     async fn test_successful_command() {
@@ -17,6 +47,25 @@ mod tests {
         let status = result.unwrap();
         assert!(status.success());
         assert_eq!(bless::runner::exit_code_from_status(status), 0);
+    }
+
+    #[tokio::test]
+    async fn test_printf_burst_is_drained() {
+        init_capture_logger();
+        let args = [
+            "-c".into(),
+            "i=1; while [ \"$i\" -le 500 ]; do printf 'bless-drain-burst-%s\\n' \"$i\"; i=$((i+1)); done".into(),
+        ];
+        let status = run_command("bash", &args).await.expect("printf burst");
+        assert!(status.success());
+        let prefix = "bless-drain-burst-";
+        let mut got: Vec<u32> = captured_lines()
+            .into_iter()
+            .filter_map(|line| line.strip_prefix(prefix)?.parse().ok())
+            .collect();
+        got.sort_unstable();
+        got.dedup();
+        assert_eq!(got, (1..=500).collect::<Vec<_>>());
     }
 
     #[tokio::test]

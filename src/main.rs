@@ -45,7 +45,7 @@ async fn run(cli: Cli) -> Result<ExitStatus, BlessError> {
             if !status.success() {
                 error!(
                     "Command exited with status: {}",
-                    status.code().unwrap_or(-1)
+                    exit_code_from_status(status)
                 );
             }
             status

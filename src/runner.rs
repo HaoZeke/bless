@@ -1,4 +1,5 @@
 use std::process::{ExitStatus, Stdio};
+use std::time::Duration;
 
 use log::{error, info, warn};
 use tokio::io::{AsyncBufReadExt, BufReader};
@@ -8,6 +9,8 @@ use crate::error::BlessError;
 
 #[cfg(unix)]
 use std::os::unix::process::ExitStatusExt;
+
+const PIPE_DRAIN: Duration = Duration::from_millis(250);
 
 pub fn exit_code_from_status(status: ExitStatus) -> u8 {
     if let Some(code) = status.code() {
@@ -64,16 +67,30 @@ pub async fn run_command(command: &str, args: &[String]) -> Result<ExitStatus, B
         }
     };
 
-    stdout_task.abort();
-    stderr_task.abort();
-    let _ = stdout_task.await;
-    let _ = stderr_task.await;
+    drain_readers(stdout_task, stderr_task).await;
 
     Ok(status)
 }
 
+async fn drain_readers(
+    stdout_task: tokio::task::JoinHandle<()>,
+    stderr_task: tokio::task::JoinHandle<()>,
+) {
+    let stdout_abort = stdout_task.abort_handle();
+    let stderr_abort = stderr_task.abort_handle();
+    let drain = async {
+        let _ = tokio::join!(stdout_task, stderr_task);
+    };
+    if tokio::time::timeout(PIPE_DRAIN, drain).await.is_err() {
+        stdout_abort.abort();
+        stderr_abort.abort();
+    }
+}
+
 #[cfg(unix)]
 async fn interrupt_child(child: &mut Child) {
+    const INTERRUPT_GRACE: Duration = Duration::from_millis(200);
+
     if let Some(pid) = child.id() {
         // process_group(0) makes the child's pid the process group id.
         let pgid = pid as i32;
@@ -81,6 +98,15 @@ async fn interrupt_child(child: &mut Child) {
         // negative pid targets that group; ESRCH is ignored if it is gone.
         unsafe {
             libc::kill(-pgid, libc::SIGINT);
+        }
+        tokio::select! {
+            status = child.wait() => {
+                let _ = status;
+                return;
+            }
+            _ = tokio::time::sleep(INTERRUPT_GRACE) => {}
+        }
+        unsafe {
             libc::kill(-pgid, libc::SIGKILL);
         }
     }
