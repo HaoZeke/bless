@@ -47,12 +47,12 @@ Project structure
 ::
 
     src/
-      main.rs           -- Entry point, CLI dispatch
+      main.rs           -- Thin binary: parse Cli, print errors, bless::run
+      lib.rs            -- run() entry, crate-private modules
       cli.rs            -- Clap derive CLI definition
       error.rs          -- BlessError enum (thiserror)
       runner.rs         -- Async command execution (tokio::process)
       logger.rs         -- Fern logger setup with format options
-      lib.rs            -- Module declarations
       db.rs             -- (feature = "mongodb") MongoDB client setup
       storage_backends/
         gzip.rs         -- GzipLogWrapper (log::Log impl)
