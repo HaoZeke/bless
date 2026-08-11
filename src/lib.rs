@@ -40,6 +40,23 @@ pub(crate) mod rpc;
 #[cfg(feature = "serve")]
 pub(crate) mod serve;
 
+struct CommandOutcome {
+    exit_code: u8,
+    #[cfg_attr(not(any(feature = "serve", feature = "mongodb")), allow(dead_code))]
+    duration: String,
+    #[cfg(feature = "mongodb")]
+    persist: Option<MongoPersist>,
+}
+
+#[cfg(feature = "mongodb")]
+struct MongoPersist {
+    files: Vec<crate::logger::GzipFile>,
+    command: String,
+    args: String,
+    start_time: std::time::SystemTime,
+    end_time: std::time::SystemTime,
+}
+
 /// Parse CLI arguments and run the selected bless command.
 pub fn run() -> Result<ExitCode, BlessError> {
     let cli = Cli::parse();
@@ -61,7 +78,41 @@ async fn run_async(cli: Cli) -> Result<ExitCode, BlessError> {
     let run_uuid = Uuid::new_v4().to_string();
 
     #[cfg(feature = "serve")]
-    let mut remote = match cli.remote.as_deref() {
+    let mut remote = open_remote(&cli, &run_uuid).await?;
+
+    let result = run_local(
+        &cli,
+        &run_uuid,
+        #[cfg(feature = "serve")]
+        remote.as_ref(),
+    )
+    .await;
+
+    // Logger, persist, or run may fail after openSession. Close first so the
+    // server finalizes the gzip and index on every path.
+    #[cfg(feature = "serve")]
+    {
+        let (exit_code, duration) = match &result {
+            Ok(outcome) => (i32::from(outcome.exit_code), outcome.duration.as_str()),
+            Err(_) => (1, "unknown"),
+        };
+        finish_remote(remote.take(), exit_code, duration).await;
+    }
+
+    let outcome = result?;
+
+    #[cfg(feature = "mongodb")]
+    persist_if_needed(&cli, &run_uuid, &outcome).await?;
+
+    Ok(ExitCode::from(outcome.exit_code))
+}
+
+#[cfg(feature = "serve")]
+async fn open_remote(
+    cli: &Cli,
+    run_uuid: &str,
+) -> Result<Option<crate::rpc::client::RemoteSession>, BlessError> {
+    match cli.remote.as_deref() {
         Some(addr) => {
             let command = cli.command.first().map(String::as_str).unwrap_or("");
             let args = cli
@@ -69,19 +120,25 @@ async fn run_async(cli: Cli) -> Result<ExitCode, BlessError> {
                 .get(1..)
                 .map(|a| a.join(" "))
                 .unwrap_or_default();
-            Some(
+            Ok(Some(
                 crate::rpc::client::RemoteSession::connect(
-                    addr, &cli.label, &run_uuid, command, &args,
+                    addr, &cli.label, run_uuid, command, &args,
                 )
                 .await?,
-            )
+            ))
         }
-        None => None,
-    };
+        None => Ok(None),
+    }
+}
 
+async fn run_local(
+    cli: &Cli,
+    run_uuid: &str,
+    #[cfg(feature = "serve")] remote: Option<&crate::rpc::client::RemoteSession>,
+) -> Result<CommandOutcome, BlessError> {
     let logger_config = LoggerConfig {
         label: &cli.label,
-        uuid: &run_uuid,
+        uuid: run_uuid,
         #[cfg(feature = "mongodb")]
         use_mongodb: cli.use_mongodb,
         #[cfg(not(feature = "mongodb"))]
@@ -93,9 +150,7 @@ async fn run_async(cli: Cli) -> Result<ExitCode, BlessError> {
     };
 
     #[cfg(feature = "serve")]
-    let extra = remote
-        .as_ref()
-        .map(|session| Box::new(session.logger()) as Box<dyn log::Log>);
+    let extra = remote.map(|session| Box::new(session.logger()) as Box<dyn log::Log>);
     #[cfg(feature = "serve")]
     let handles = match extra {
         Some(extra) => setup_logger_with_extra(&logger_config, Some(extra))?,
@@ -131,20 +186,15 @@ async fn run_async(cli: Cli) -> Result<ExitCode, BlessError> {
             error!("Failed to run command: {} {}", command, args.join(" "));
             error!("Error: {}", e);
             handles.finish_all()?;
-            #[cfg(feature = "serve")]
-            finish_remote(remote.take(), 1, "unknown").await;
             return Err(BlessError::Io(e));
         }
         Err(e) => {
             handles.finish_all()?;
-            #[cfg(feature = "serve")]
-            finish_remote(remote.take(), 1, "unknown").await;
             return Err(e);
         }
     };
     let end_time = std::time::SystemTime::now();
 
-    #[cfg_attr(not(feature = "mongodb"), allow(unused_variables))]
     let duration = match end_time.duration_since(start_time) {
         Ok(d) => {
             let skip_duration_trace = {
@@ -175,41 +225,54 @@ async fn run_async(cli: Cli) -> Result<ExitCode, BlessError> {
 
     handles.finish_all()?;
 
-    #[cfg(feature = "serve")]
-    finish_remote(
-        remote.take(),
-        i32::from(exit_code_from_status(status)),
-        &duration,
-    )
-    .await;
-
     #[cfg(feature = "mongodb")]
-    if let Some(files) = persist_files {
-        let client = setup_mongodb().await?;
-        let mongodb_storage = MongoDBStorage::new(&client, &cli.db, &cli.collection).await?;
-        let args_joined = args.join(" ");
+    let persist = persist_files.map(|files| MongoPersist {
+        files,
+        command: command.clone(),
+        args: args.join(" "),
+        start_time,
+        end_time,
+    });
 
-        // One document per opened gzip. Combined runs insert once with
-        // stream=""; --split inserts stdout then stderr.
-        for file in &files {
-            let params = SaveGzipBlobParams {
-                cmd: command,
-                args: &args_joined,
-                label: &cli.label,
-                duration: &duration,
-                uuid: &run_uuid,
-                file_path: &file.path,
-                stream: file.stream.or(Some("")),
-                start_time: start_time.into(),
-                end_time: end_time.into(),
-            };
-            mongodb_storage
-                .save_gzip_blob(params, cli.force_gridfs)
-                .await?;
-        }
+    Ok(CommandOutcome {
+        exit_code: exit_code_from_status(status),
+        duration,
+        #[cfg(feature = "mongodb")]
+        persist,
+    })
+}
+
+#[cfg(feature = "mongodb")]
+async fn persist_if_needed(
+    cli: &Cli,
+    run_uuid: &str,
+    outcome: &CommandOutcome,
+) -> Result<(), BlessError> {
+    let Some(persist) = outcome.persist.as_ref() else {
+        return Ok(());
+    };
+    let client = setup_mongodb().await?;
+    let mongodb_storage = MongoDBStorage::new(&client, &cli.db, &cli.collection).await?;
+
+    // One document per opened gzip. Combined runs insert once with
+    // stream=""; --split inserts stdout then stderr.
+    for file in &persist.files {
+        let params = SaveGzipBlobParams {
+            cmd: &persist.command,
+            args: &persist.args,
+            label: &cli.label,
+            duration: &outcome.duration,
+            uuid: run_uuid,
+            file_path: &file.path,
+            stream: file.stream.or(Some("")),
+            start_time: persist.start_time.into(),
+            end_time: persist.end_time.into(),
+        };
+        mongodb_storage
+            .save_gzip_blob(params, cli.force_gridfs)
+            .await?;
     }
-
-    Ok(ExitCode::from(exit_code_from_status(status)))
+    Ok(())
 }
 
 #[cfg(feature = "serve")]

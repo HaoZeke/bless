@@ -146,6 +146,7 @@ pub struct RemoteSession {
     rx: Arc<Mutex<std_mpsc::Receiver<PendingLine>>>,
     flush_stop: Option<tokio::sync::oneshot::Sender<()>>,
     flush_task: Option<tokio::task::JoinHandle<()>>,
+    closed: bool,
 }
 
 impl RemoteSession {
@@ -192,6 +193,7 @@ impl RemoteSession {
             rx: Arc::new(Mutex::new(rx)),
             flush_stop: None,
             flush_task: None,
+            closed: false,
         };
         session.start_flusher();
         Ok(session)
@@ -225,17 +227,223 @@ impl RemoteSession {
     }
 
     /// Stop the flusher, send remaining lines, then close the session.
+    ///
+    /// A failed final writeBatch still attempts close so the server can
+    /// finalize the gzip and write the index.
     pub async fn finish(mut self, exit_code: i32, duration: &str) -> Result<(), BlessError> {
+        self.stop_flusher().await;
+        let lines = drain_pending(&self.rx);
+        let send_result = send_lines(&self.sink, &lines).await.map_err(rpc_err);
+        let close_result = close_session(&self.sink, exit_code, duration)
+            .await
+            .map_err(rpc_err);
+        self.closed = true;
+        send_result.and(close_result)
+    }
+
+    async fn stop_flusher(&mut self) {
         if let Some(tx) = self.flush_stop.take() {
             let _ = tx.send(());
         }
         if let Some(task) = self.flush_task.take() {
             let _ = task.await;
         }
-        let lines = drain_pending(&self.rx);
-        send_lines(&self.sink, &lines).await.map_err(rpc_err)?;
-        close_session(&self.sink, exit_code, duration)
+    }
+}
+
+impl Drop for RemoteSession {
+    fn drop(&mut self) {
+        if self.closed {
+            return;
+        }
+        if let Some(tx) = self.flush_stop.take() {
+            let _ = tx.send(());
+        }
+        if let Some(task) = self.flush_task.take() {
+            task.abort();
+        }
+        // Best-effort close if finish() was skipped. The caller still needs
+        // an awaited finish() before tearing down the LocalSet; spawn_local
+        // is only a safety net while the RPC system is still running.
+        let sink = self.sink.clone();
+        let _ = tokio::task::spawn_local(async move {
+            let _ = close_session(&sink, 1, "unknown").await;
+        });
+        self.closed = true;
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::bless_log_capnp::bless_server;
+    use capnp::capability::Promise;
+    use capnp_rpc::pry;
+    use capnp_rpc::rpc_twoparty_capnp::Side;
+    use capnp_rpc::twoparty::VatNetwork;
+    use capnp_rpc::RpcSystem;
+    use futures::AsyncReadExt;
+    use log::{Level, Record};
+    use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
+    use std::sync::Arc;
+    use std::time::Duration;
+    use tokio_util::compat::TokioAsyncReadCompatExt;
+
+    #[derive(Clone)]
+    struct FailWriteServer {
+        closed: Arc<AtomicBool>,
+        exit_code: Arc<AtomicI32>,
+    }
+
+    impl bless_server::Server for FailWriteServer {
+        fn open_session(
+            &mut self,
+            _params: bless_server::OpenSessionParams,
+            mut results: bless_server::OpenSessionResults,
+        ) -> Promise<(), capnp::Error> {
+            let sink = FailWriteSink {
+                closed: Arc::clone(&self.closed),
+                exit_code: Arc::clone(&self.exit_code),
+            };
+            results.get().set_sink(capnp_rpc::new_client(sink));
+            Promise::ok(())
+        }
+
+        fn list_sessions(
+            &mut self,
+            _params: bless_server::ListSessionsParams,
+            mut results: bless_server::ListSessionsResults,
+        ) -> Promise<(), capnp::Error> {
+            results.get().init_sessions(0);
+            Promise::ok(())
+        }
+    }
+
+    struct FailWriteSink {
+        closed: Arc<AtomicBool>,
+        exit_code: Arc<AtomicI32>,
+    }
+
+    impl log_sink::Server for FailWriteSink {
+        fn write_batch(
+            &mut self,
+            _params: log_sink::WriteBatchParams,
+            _results: log_sink::WriteBatchResults,
+        ) -> Promise<(), capnp::Error> {
+            Promise::err(capnp::Error::failed("write_batch failed".into()))
+        }
+
+        fn close(
+            &mut self,
+            params: log_sink::CloseParams,
+            _results: log_sink::CloseResults,
+        ) -> Promise<(), capnp::Error> {
+            let reader = pry!(params.get());
+            self.exit_code
+                .store(reader.get_exit_code(), Ordering::SeqCst);
+            self.closed.store(true, Ordering::SeqCst);
+            Promise::ok(())
+        }
+    }
+
+    async fn spawn_fail_write_server(server: FailWriteServer) -> String {
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
             .await
-            .map_err(rpc_err)
+            .expect("bind test server");
+        let addr = listener.local_addr().expect("local addr").to_string();
+        tokio::task::spawn_local(async move {
+            loop {
+                let (stream, _) = match listener.accept().await {
+                    Ok(s) => s,
+                    Err(_) => break,
+                };
+                let server = server.clone();
+                tokio::task::spawn_local(async move {
+                    let (reader, writer) = TokioAsyncReadCompatExt::compat(stream).split();
+                    let network = VatNetwork::new(reader, writer, Side::Server, Default::default());
+                    let client: bless_server::Client = capnp_rpc::new_client(server);
+                    let rpc = RpcSystem::new(Box::new(network), Some(client.clone().client));
+                    let _ = rpc.await;
+                });
+            }
+        });
+        addr
+    }
+
+    fn enqueue_line(session: &RemoteSession, message: &str) {
+        session.logger().log(
+            &Record::builder()
+                .args(format_args!("{message}"))
+                .level(Level::Info)
+                .target("bless-test")
+                .module_path_static(Some("bless-test"))
+                .file_static(Some("client.rs"))
+                .line(Some(1))
+                .build(),
+        );
+    }
+
+    #[tokio::test]
+    async fn finish_closes_after_write_batch_error() {
+        tokio::task::LocalSet::new()
+            .run_until(async {
+                let closed = Arc::new(AtomicBool::new(false));
+                let exit_code = Arc::new(AtomicI32::new(i32::MIN));
+                let addr = spawn_fail_write_server(FailWriteServer {
+                    closed: Arc::clone(&closed),
+                    exit_code: Arc::clone(&exit_code),
+                })
+                .await;
+
+                let mut session = RemoteSession::connect(&addr, "lab", "u-1", "true", "")
+                    .await
+                    .expect("connect");
+                session.stop_flusher().await;
+                enqueue_line(&session, "pending line");
+
+                let err = session
+                    .finish(7, "1s")
+                    .await
+                    .expect_err("writeBatch should fail");
+                match err {
+                    BlessError::Rpc(msg) => {
+                        assert!(msg.contains("write_batch failed"), "{msg}");
+                    }
+                    other => panic!("expected RPC error, got {other}"),
+                }
+                assert!(closed.load(Ordering::SeqCst), "close must still run");
+                assert_eq!(exit_code.load(Ordering::SeqCst), 7);
+            })
+            .await;
+    }
+
+    #[tokio::test]
+    async fn drop_attempts_close_when_finish_is_skipped() {
+        tokio::task::LocalSet::new()
+            .run_until(async {
+                let closed = Arc::new(AtomicBool::new(false));
+                let exit_code = Arc::new(AtomicI32::new(i32::MIN));
+                let addr = spawn_fail_write_server(FailWriteServer {
+                    closed: Arc::clone(&closed),
+                    exit_code: Arc::clone(&exit_code),
+                })
+                .await;
+
+                {
+                    let _session = RemoteSession::connect(&addr, "lab", "u-2", "true", "")
+                        .await
+                        .expect("connect");
+                }
+
+                let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
+                while !closed.load(Ordering::SeqCst) {
+                    if tokio::time::Instant::now() >= deadline {
+                        panic!("Drop should close the remote session");
+                    }
+                    tokio::time::sleep(Duration::from_millis(10)).await;
+                }
+                assert_eq!(exit_code.load(Ordering::SeqCst), 1);
+            })
+            .await;
     }
 }

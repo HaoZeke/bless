@@ -7,6 +7,8 @@ All notable changes to this project will be documented in this file. See [conven
 - Default `cargo install bless` is gzip-only; `--use-mongodb` requires `--features mongodb`
 - Crate is a CLI, not a stable library; only `run`, `BlessError`, and `runner` stay public
 #### Bugfixes
+- Close the remote session if logger, persist, or run fails after `--remote` connect
+- Close the remote session even if the final writeBatch fails
 - `--serve :port` binds `127.0.0.1`, not `0.0.0.0`
 - Sanitize session label/uuid; finish the gzip and evict the session on close
 - Drop unused BlessError::CommandFailed; command failures are exit codes, not errors

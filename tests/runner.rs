@@ -150,4 +150,86 @@ mod tests {
             "stderr should start with bless:, got {stderr:?}"
         );
     }
+
+    #[cfg(feature = "serve")]
+    #[test]
+    fn binary_remote_closes_when_local_gzip_open_fails() {
+        use std::io::{BufRead, BufReader};
+        use std::process::{Command, Stdio};
+        use std::time::{Duration, Instant};
+
+        let data = tempfile::tempdir().unwrap();
+        let port = {
+            let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+            listener.local_addr().unwrap().port()
+        };
+        let serve_addr = format!("127.0.0.1:{port}");
+        let mut server = Command::new(env!("CARGO_BIN_EXE_bless"))
+            .args(["--serve", &serve_addr])
+            .env("XDG_DATA_HOME", data.path())
+            .stdout(Stdio::null())
+            .stderr(Stdio::piped())
+            .spawn()
+            .expect("spawn bless --serve");
+
+        let stderr = server.stderr.take().expect("server stderr");
+        let (tx, rx) = std::sync::mpsc::channel::<String>();
+        std::thread::spawn(move || {
+            let reader = BufReader::new(stderr);
+            for line in reader.lines().map_while(Result::ok) {
+                let _ = tx.send(line);
+            }
+        });
+
+        let deadline = Instant::now() + Duration::from_secs(5);
+        let mut listen_addr = None;
+        while Instant::now() < deadline {
+            match rx.recv_timeout(Duration::from_millis(50)) {
+                Ok(line) => {
+                    if let Some(rest) = line.strip_prefix("[serve] listening on ") {
+                        listen_addr = Some(rest.trim().to_string());
+                        break;
+                    }
+                }
+                Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {}
+                Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => break,
+            }
+        }
+        let addr = listen_addr.expect("serve should print listening address");
+
+        let status = Command::new(env!("CARGO_BIN_EXE_bless"))
+            .args([
+                "--remote",
+                &addr,
+                "--local",
+                "-o",
+                "/no/such/dir/bless-missing.gz",
+                "--",
+                "true",
+            ])
+            .status()
+            .expect("spawn bless --remote");
+        assert_eq!(status.code(), Some(1));
+
+        let index = data
+            .path()
+            .join("bless")
+            .join("sessions")
+            .join("index.json");
+        let index_deadline = Instant::now() + Duration::from_secs(2);
+        while !index.exists() && Instant::now() < index_deadline {
+            std::thread::sleep(Duration::from_millis(20));
+        }
+        let body = std::fs::read_to_string(&index).unwrap_or_else(|e| {
+            let _ = server.kill();
+            panic!("expected closed-session index at {}: {e}", index.display());
+        });
+        assert!(
+            body.contains("\"exit_code\":1"),
+            "server should record close after logger failure, got {body}"
+        );
+
+        let _ = server.kill();
+        let _ = server.wait();
+    }
 }
