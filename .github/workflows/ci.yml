@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   check:
     runs-on: ${{ matrix.os }}
@@ -23,25 +26,45 @@ jobs:
         run: cargo fmt --check
 
       - name: Clippy
-        run: cargo clippy -- -D warnings
+        run: cargo clippy --locked -- -D warnings
 
       - name: Test
-        run: cargo test
+        run: cargo test --locked
 
   check-serve:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
       - uses: Swatinem/rust-cache@v2
         with:
           key: serve
 
       - name: Install capnpc
-        run: sudo apt-get install -y capnproto
-
-      - name: Check serve feature
-        run: cargo check --features serve
+        run: sudo apt-get update && sudo apt-get install -y capnproto
 
       - name: Clippy serve
-        run: cargo clippy --features serve -- -D warnings
+        run: cargo clippy --locked --features serve -- -D warnings
+
+      - name: Test serve
+        run: cargo test --locked --features serve
+
+  msrv:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.74
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: msrv
+
+      - name: Install capnpc
+        run: sudo apt-get update && sudo apt-get install -y capnproto
+
+      - name: MSRV check
+        run: cargo check --locked
+
+      - name: MSRV check serve
+        run: cargo check --locked --features serve
