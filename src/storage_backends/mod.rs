@@ -12,9 +12,11 @@ pub mod mongodb;
 ///
 /// MongoDB documents cap at 16 MiB; stay under that with headroom for
 /// metadata fields on the same document.
+#[cfg_attr(not(feature = "mongodb"), allow(dead_code))]
 pub const BSON_BLOB_SOFT_LIMIT: u64 = 15 * 1024 * 1024;
 
 /// How a finished gzip log should be persisted in MongoDB.
+#[cfg_attr(not(feature = "mongodb"), allow(dead_code))]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BlobStorageKind {
     /// Store bytes as a `Binary` field on the run metadata document.
@@ -24,6 +26,7 @@ pub enum BlobStorageKind {
 }
 
 /// Choose storage based on file size and an explicit GridFS request.
+#[cfg_attr(not(feature = "mongodb"), allow(dead_code))]
 pub fn select_blob_storage(file_size: u64, force_gridfs: bool) -> BlobStorageKind {
     if force_gridfs || file_size > BSON_BLOB_SOFT_LIMIT {
         BlobStorageKind::GridFs

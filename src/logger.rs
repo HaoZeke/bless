@@ -25,6 +25,7 @@ pub struct LoggerHandles {
 ///
 /// Combined logs have `stream == None`. `--split` sets `stream` to
 /// `"stdout"` or `"stderr"` so Mongo persist can tag each document.
+#[cfg_attr(not(feature = "mongodb"), allow(dead_code))]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct GzipFile {
     pub path: PathBuf,
@@ -46,6 +47,7 @@ impl LoggerHandles {
     }
 
     /// Gzip paths this logger created. Empty for `-o -`.
+    #[cfg_attr(not(feature = "mongodb"), allow(dead_code))]
     pub fn gzip_files(&self) -> Vec<GzipFile> {
         let mut files = Vec::new();
         if let Some(ref logger) = self.gzip_logger {
@@ -72,6 +74,7 @@ impl LoggerHandles {
     /// Files `--use-mongodb` should persist after `finish_all`.
     ///
     /// `-o -` opens no gzip, so there is nothing to upload.
+    #[cfg_attr(not(feature = "mongodb"), allow(dead_code))]
     pub fn require_gzip_files(&self) -> Result<Vec<GzipFile>, BlessError> {
         let files = self.gzip_files();
         if files.is_empty() {

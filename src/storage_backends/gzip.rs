@@ -23,6 +23,7 @@ impl GzipLogWrapper {
     }
 
     /// Path passed to [`File::create`] when this wrapper was opened.
+    #[cfg_attr(not(feature = "mongodb"), allow(dead_code))]
     pub fn path(&self) -> &Path {
         &self.path
     }

@@ -15,7 +15,9 @@ use crate::cli::Cli;
 #[cfg(feature = "mongodb")]
 use crate::db::setup_mongodb;
 use crate::error::BlessError;
-use crate::logger::{setup_logger_with_extra, LoggerConfig};
+#[cfg(feature = "serve")]
+use crate::logger::setup_logger_with_extra;
+use crate::logger::{setup_logger, LoggerConfig};
 use crate::runner::{exit_code_from_status, run_command};
 #[cfg(feature = "mongodb")]
 use crate::storage_backends::mongodb::{MongoDBStorage, SaveGzipBlobParams};
@@ -29,7 +31,7 @@ pub mod runner;
 pub(crate) mod storage_backends;
 
 #[cfg(feature = "serve")]
-#[allow(clippy::all, unused_parens)]
+#[allow(clippy::all, unused_parens, dead_code)]
 mod bless_log_capnp {
     include!(concat!(env!("OUT_DIR"), "/bless_log_capnp.rs"));
 }
@@ -94,9 +96,13 @@ async fn run_async(cli: Cli) -> Result<ExitCode, BlessError> {
     let extra = remote
         .as_ref()
         .map(|session| Box::new(session.logger()) as Box<dyn log::Log>);
+    #[cfg(feature = "serve")]
+    let handles = match extra {
+        Some(extra) => setup_logger_with_extra(&logger_config, Some(extra))?,
+        None => setup_logger(&logger_config)?,
+    };
     #[cfg(not(feature = "serve"))]
-    let extra = None;
-    let handles = setup_logger_with_extra(&logger_config, extra)?;
+    let handles = setup_logger(&logger_config)?;
 
     #[cfg(feature = "mongodb")]
     let persist_files = if cli.use_mongodb {

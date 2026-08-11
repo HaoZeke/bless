@@ -36,6 +36,7 @@ impl RemoteLogger {
 
     /// Drain all buffered lines and send them in batches to the remote sink.
     /// Call this periodically or after the command finishes.
+    #[allow(dead_code)]
     pub async fn flush_to_sink(
         rx: &std_mpsc::Receiver<PendingLine>,
         sink: &log_sink::Client,
