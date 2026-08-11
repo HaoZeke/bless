@@ -266,9 +266,10 @@ impl Drop for RemoteSession {
         // an awaited finish() before tearing down the LocalSet; spawn_local
         // is only a safety net while the RPC system is still running.
         let sink = self.sink.clone();
-        let _ = tokio::task::spawn_local(async move {
+        // JoinHandle is a Future; do not `let _ =` it (clippy let_underscore_future).
+        drop(tokio::task::spawn_local(async move {
             let _ = close_session(&sink, 1, "unknown").await;
-        });
+        }));
         self.closed = true;
     }
 }
