@@ -239,10 +239,7 @@ pub(crate) fn parse_run_filename(name: &str) -> Option<(String, String, Option<S
 
 pub(crate) fn list_local(dir: &Path) -> Result<Vec<LocalRunFile>, BlessError> {
     let mut runs = Vec::new();
-    let entries = match fs::read_dir(dir) {
-        Ok(entries) => entries,
-        Err(e) => return Err(e.into()),
-    };
+    let entries = fs::read_dir(dir)?;
     for entry in entries {
         let entry = entry?;
         let path = entry.path();
@@ -409,9 +406,7 @@ fn dest_path(dir: &Path, output: &str) -> PathBuf {
 }
 
 fn split_single_dest_error(uuid: &str) -> BlessError {
-    BlessError::Config(format!(
-        "run {uuid} has two streams; omit -o to write both"
-    ))
+    BlessError::Config(format!("run {uuid} has two streams; omit -o to write both"))
 }
 
 #[cfg(feature = "mongodb")]
