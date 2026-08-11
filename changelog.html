@@ -238,6 +238,8 @@ data-aria-dark="Switch to auto color mode">
 <section id="bugfixes">
 <h4>Bugfixes<a class="headerlink" href="#bugfixes" title="Link to this heading">¶</a></h4>
 <ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--serve</span> <span class="pre">:port</span></code> binds <code class="docutils literal notranslate"><span class="pre">127.0.0.1</span></code>, not <code class="docutils literal notranslate"><span class="pre">0.0.0.0</span></code></p></li>
+<li><p>Sanitize session label/uuid; finish the gzip and evict the session on close</p></li>
 <li><p>Drop unused BlessError::CommandFailed; command failures are exit codes, not errors</p></li>
 <li><p>Print a bless error’s source when Display does not already include it</p></li>
 <li><p>Recover gzip log and flush from a poisoned encoder mutex instead of panicking</p></li>
@@ -255,6 +257,8 @@ data-aria-dark="Switch to auto color mode">
 <section id="enhancements">
 <h4>Enhancements<a class="headerlink" href="#enhancements" title="Link to this heading">¶</a></h4>
 <ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--serve</span> <span class="pre">ADDR</span></code> runs the server without a dummy command</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--remote</span> <span class="pre">ADDR</span></code> streams logs via capnp; <code class="docutils literal notranslate"><span class="pre">--local</span></code> keeps a gzip</p></li>
 <li><p>Unique compound index on <code class="docutils literal notranslate"><span class="pre">(run_uuid,</span> <span class="pre">stream)</span></code> and non-unique index on <code class="docutils literal notranslate"><span class="pre">(label,</span> <span class="pre">start_time)</span></code> after connect</p></li>
 <li><p>get_db_gzip.py downloads GridFS blobs when storage is gridfs or gzip_blob_id is set</p></li>
 </ul>

@@ -226,6 +226,7 @@ data-aria-dark="Switch to auto color mode">
 <section id="synopsis">
 <h2>Synopsis<a class="headerlink" href="#synopsis" title="Link to this heading">¶</a></h2>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span data-line="1"><span class="n">bless</span> <span class="p">[</span><span class="n">OPTIONS</span><span class="p">]</span> <span class="o">--</span> <span class="n">COMMAND</span> <span class="p">[</span><span class="n">ARGS</span><span class="o">...</span><span class="p">]</span>
+</span><span data-line="2"><span class="n">bless</span> <span class="o">--</span><span class="n">serve</span> <span class="n">ADDR</span>
 </span></pre></div>
 </div>
 </section>
@@ -310,17 +311,24 @@ timestamps.</p>
 <p>Available when built with <code class="docutils literal notranslate"><span class="pre">--features</span> <span class="pre">serve</span></code>.</p>
 <section id="serve-addr">
 <h3><code class="docutils literal notranslate"><span class="pre">--serve</span> <span class="pre">&lt;ADDR&gt;</span></code><a class="headerlink" href="#serve-addr" title="Link to this heading">¶</a></h3>
-<p>Start in server mode, listening for capnp RPC connections.</p>
+<p>Start in server mode, listening for capnp RPC connections. No wrapped
+command is required. Conflicts with <code class="docutils literal notranslate"><span class="pre">--remote</span></code> and <code class="docutils literal notranslate"><span class="pre">--use-mongodb</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">:port</span></code> binds <code class="docutils literal notranslate"><span class="pre">127.0.0.1:port</span></code> (not all interfaces). An explicit host is
+unchanged.</p>
 <p>Example: <code class="docutils literal notranslate"><span class="pre">--serve</span> <span class="pre">:5678</span></code></p>
 </section>
 <section id="remote-addr">
 <h3><code class="docutils literal notranslate"><span class="pre">--remote</span> <span class="pre">&lt;ADDR&gt;</span></code><a class="headerlink" href="#remote-addr" title="Link to this heading">¶</a></h3>
-<p>Stream logs to a remote bless server instead of (or in addition to) local files.</p>
+<p>Stream logs to a remote bless server. The wrapped command is still
+required. <code class="docutils literal notranslate"><span class="pre">:port</span></code> connects to <code class="docutils literal notranslate"><span class="pre">127.0.0.1:port</span></code>.</p>
+<p>Without <code class="docutils literal notranslate"><span class="pre">--local</span></code> and without <code class="docutils literal notranslate"><span class="pre">-o</span></code>, no local gzip is written. An
+explicit <code class="docutils literal notranslate"><span class="pre">-o</span></code> still writes that path.</p>
 <p>Example: <code class="docutils literal notranslate"><span class="pre">--remote</span> <span class="pre">:5678</span></code></p>
 </section>
 <section id="local">
 <h3><code class="docutils literal notranslate"><span class="pre">--local</span></code><a class="headerlink" href="#local" title="Link to this heading">¶</a></h3>
-<p>When used with <code class="docutils literal notranslate"><span class="pre">--remote</span></code>, also write a local gzip file.</p>
+<p>Requires <code class="docutils literal notranslate"><span class="pre">--remote</span></code>. Also write a local gzip file (default
+<code class="docutils literal notranslate"><span class="pre">{label}_{uuid}.log.gz</span></code> unless <code class="docutils literal notranslate"><span class="pre">-o</span></code> is set).</p>
 </section>
 </section>
 <section id="exit-codes">

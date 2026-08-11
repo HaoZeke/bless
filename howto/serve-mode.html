@@ -225,6 +225,9 @@ Cap’n Proto RPC. The server writes per-session gzip files and maintains an ind
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span data-line="1">bless<span class="w"> </span>--serve<span class="w"> </span>:5678
 </span></pre></div>
 </div>
+<p><code class="docutils literal notranslate"><span class="pre">:5678</span></code> binds <code class="docutils literal notranslate"><span class="pre">127.0.0.1:5678</span></code>, not all interfaces. Pass an explicit
+address such as <code class="docutils literal notranslate"><span class="pre">0.0.0.0:5678</span></code> or <code class="docutils literal notranslate"><span class="pre">192.168.1.10:5678</span></code> to listen elsewhere.
+No dummy command is required.</p>
 <p>The server stores sessions in <code class="docutils literal notranslate"><span class="pre">~/.local/share/bless/sessions/</span></code>.</p>
 </section>
 <section id="stream-from-a-client">
@@ -232,6 +235,8 @@ Cap’n Proto RPC. The server writes per-session gzip files and maintains an ind
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span data-line="1">bless<span class="w"> </span>--remote<span class="w"> </span>:5678<span class="w"> </span>--label<span class="w"> </span>ci-build<span class="w"> </span>--<span class="w"> </span>make<span class="w"> </span><span class="nb">test</span>
 </span></pre></div>
 </div>
+<p><code class="docutils literal notranslate"><span class="pre">:5678</span></code> connects to <code class="docutils literal notranslate"><span class="pre">127.0.0.1:5678</span></code>. Without <code class="docutils literal notranslate"><span class="pre">--local</span></code> (and without
+<code class="docutils literal notranslate"><span class="pre">-o</span></code>) no local gzip is written.</p>
 <p>To also keep a local gzip file:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span data-line="1">bless<span class="w"> </span>--remote<span class="w"> </span>:5678<span class="w"> </span>--local<span class="w"> </span>--label<span class="w"> </span>ci-build<span class="w"> </span>--<span class="w"> </span>make<span class="w"> </span><span class="nb">test</span>
 </span></pre></div>
