@@ -3,10 +3,14 @@ All notable changes to this project will be documented in this file. See [conven
 
 - - -
 ## Unreleased
+
+- - -
+## v0.4.0 - 2026-08-11
 #### Enhancements
 - `bless ls`, `bless show <id>`, and `bless fetch <id>` query local gzip runs; `--use-mongodb` queries `bless.commands`
 #### Bugfixes
 - Combined `--use-mongodb` gzip archives TRACE through ERROR; drop the Info|Warn-only filter
+- Serve session gzip uses `[rfc3339 LEVEL] message`; listSessions sets duration and exitCode and lists closed sessions
 #### Documentation
 - CLI reference and README cover the query subcommands
 #### CI
