@@ -42,16 +42,28 @@ The gzip file always uses the timestamped log format regardless of `--format`.
 
 # Installation
 
-From crates.io:
+From crates.io (gzip-only; no `--use-mongodb`):
 
 ```bash
 cargo install bless
+```
+
+To include MongoDB persist (`--use-mongodb`, `--force-gridfs`, `--db`, `--collection`):
+
+```bash
+cargo install bless --features mongodb
 ```
 
 To include serve mode (capnp RPC log aggregation):
 
 ```bash
 cargo install bless --features serve
+```
+
+Both optional backends:
+
+```bash
+cargo install bless --features mongodb,serve
 ```
 
 From source:
@@ -65,6 +77,12 @@ Or install the local checkout:
 
 ```bash
 cargo install --path .
+```
+
+MongoDB persist from a local checkout:
+
+```bash
+cargo install --path . --features mongodb
 ```
 
 Serve mode from a local checkout:
@@ -150,7 +168,8 @@ uses `.bless_sessions` in the working directory.
 
 ## MongoDB
 
-Store run output and metadata in MongoDB:
+Requires a build with `--features mongodb`. Store run output and metadata
+in MongoDB:
 
 ```bash
 MONGODB_URI="mongodb://localhost:27017/" bless --use-mongodb --label experiment -- ./run.sh

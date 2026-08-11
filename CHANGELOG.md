@@ -3,6 +3,8 @@ All notable changes to this project will be documented in this file. See [conven
 
 - - -
 ## Unreleased
+#### Breaking
+- Default `cargo install bless` is gzip-only; `--use-mongodb` requires `--features mongodb`
 #### Bugfixes
 - `--serve :port` binds `127.0.0.1`, not `0.0.0.0`
 - Sanitize session label/uuid; finish the gzip and evict the session on close
@@ -19,19 +21,22 @@ All notable changes to this project will be documented in this file. See [conven
 - Persist to `bless.commands` by default; `--db`/`--collection` or `MONGODB_DB`/`MONGODB_COLLECTION` override
 - Do not list all databases on persist
 #### Enhancements
+- Optional `mongodb` feature gates the MongoDB client, `--use-mongodb`, and related flags
 - `--serve ADDR` runs the server without a dummy command
 - `--remote ADDR` streams logs via capnp; `--local` keeps a gzip
 - Unique compound index on `(run_uuid, stream)` and non-unique index on `(label, start_time)` after connect
 - get_db_gzip.py downloads GridFS blobs when storage is gridfs or gzip_blob_id is set
 #### Documentation
+- Install and MongoDB howto require `--features mongodb` for `--use-mongodb`
 - Drop public cf-ci references; use generic log-filtering examples
 - Align Sphinx/orgmode setup so RST is generated, not committed
 - Site chrome: inline logo, author link, TurtleTech footer
 - Analytics: Plausible to Umami, plus Antics tracker; closed-path TurtleTech SVG
 #### CI
+- Test the optional `mongodb` feature on the default job (`clippy`/`test --features mongodb --locked`)
 - Release workflow for Zenodo DOI minting
 - Docs deploy path, write permissions, and CNAME for GitHub Pages
-- MSRV 1.74 cargo check --locked (default and --features serve)
+- MSRV 1.74 cargo check --locked (default, --features serve, and --features mongodb)
 - cargo test --locked on the default matrix; cargo test --locked --features serve
 - contents: read on the CI workflow; apt-get update before capnproto
 

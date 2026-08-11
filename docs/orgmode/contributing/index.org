@@ -10,6 +10,13 @@ cargo build
 cargo test
 #+end_src
 
+For MongoDB persist development:
+
+#+begin_src bash
+cargo build --features mongodb
+cargo test --features mongodb
+#+end_src
+
 For serve mode development:
 
 #+begin_src bash
@@ -24,6 +31,8 @@ This requires =capnpc= (Cap'n Proto compiler) to be installed.
 cargo fmt --check
 cargo clippy -- -D warnings
 cargo test
+cargo clippy --features mongodb -- -D warnings
+cargo test --features mongodb
 #+end_src
 
 * Project structure
@@ -36,10 +45,10 @@ src/
   runner.rs         -- Async command execution (tokio::process)
   logger.rs         -- Fern logger setup with format options
   lib.rs            -- Module declarations
-  db.rs             -- MongoDB client setup
+  db.rs             -- (feature = "mongodb") MongoDB client setup
   storage_backends/
     gzip.rs         -- GzipLogWrapper (log::Log impl)
-    mongodb.rs      -- MongoDB blob storage
+    mongodb.rs      -- (feature = "mongodb") MongoDB blob storage
   rpc/              -- (feature = "serve")
     mod.rs
     server.rs       -- BlessServer + LogSink impls

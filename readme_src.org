@@ -31,13 +31,21 @@ The ~--format~ flag controls stdout rendering:
 
 The gzip file always uses the timestamped log format regardless of ~--format~.
 * Installation
-From crates.io:
+From crates.io (gzip-only; no ~--use-mongodb~):
 #+begin_src bash
 cargo install bless
+#+end_src
+To include MongoDB persist (~--use-mongodb~, ~--force-gridfs~, ~--db~, ~--collection~):
+#+begin_src bash
+cargo install bless --features mongodb
 #+end_src
 To include serve mode (capnp RPC log aggregation):
 #+begin_src bash
 cargo install bless --features serve
+#+end_src
+Both optional backends:
+#+begin_src bash
+cargo install bless --features mongodb,serve
 #+end_src
 From source:
 #+begin_src bash
@@ -47,6 +55,10 @@ cargo build --release
 Or install the local checkout:
 #+begin_src bash
 cargo install --path .
+#+end_src
+MongoDB persist from a local checkout:
+#+begin_src bash
+cargo install --path . --features mongodb
 #+end_src
 Serve mode from a local checkout:
 #+begin_src bash
@@ -107,7 +119,8 @@ Session data is stored under ~$XDG_DATA_HOME/bless/sessions/~ (or
 ~$HOME/.local/share/bless/sessions/~). If neither is set, the server
 uses ~.bless_sessions~ in the working directory.
 ** MongoDB
-Store run output and metadata in MongoDB:
+Requires a build with ~--features mongodb~. Store run output and metadata
+in MongoDB:
 #+begin_src bash
 MONGODB_URI="mongodb://localhost:27017/" bless --use-mongodb --label experiment -- ./run.sh
 #+end_src
@@ -158,7 +171,8 @@ pixi run docbld
 - Fern :: Log dispatch
 - Thiserror :: Typed error handling
 - UUID :: Run identification
-- Cap'n Proto :: (optional) RPC for serve mode
+- MongoDB / BSON :: (optional, ~--features mongodb~) persist gzip blobs
+- Cap'n Proto :: (optional, ~--features serve~) RPC for serve mode
 ** Documentation
 We use ~cocogitto~ via ~cog~ to handle commit conventions.
 *** Readme
