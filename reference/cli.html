@@ -109,6 +109,7 @@ data-aria-dark="Switch to auto color mode">
 <li><a class="reference internal" href="#options">Options</a><ul>
 <li><a class="reference internal" href="#label-label"><code class="docutils literal notranslate"><span class="pre">--label</span> <span class="pre">&lt;LABEL&gt;</span></code></a></li>
 <li><a class="reference internal" href="#use-mongodb"><code class="docutils literal notranslate"><span class="pre">--use-mongodb</span></code></a></li>
+<li><a class="reference internal" href="#force-gridfs"><code class="docutils literal notranslate"><span class="pre">--force-gridfs</span></code></a></li>
 <li><a class="reference internal" href="#no-timestamp"><code class="docutils literal notranslate"><span class="pre">--no-timestamp</span></code></a></li>
 <li><a class="reference internal" href="#format-format"><code class="docutils literal notranslate"><span class="pre">--format</span> <span class="pre">&lt;FORMAT&gt;</span></code></a></li>
 <li><a class="reference internal" href="#o-output-path"><code class="docutils literal notranslate"><span class="pre">-o,</span> <span class="pre">--output</span> <span class="pre">&lt;PATH&gt;</span></code></a></li>
@@ -237,6 +238,12 @@ data-aria-dark="Switch to auto color mode">
 <h3><code class="docutils literal notranslate"><span class="pre">--use-mongodb</span></code><a class="headerlink" href="#use-mongodb" title="Link to this heading">¶</a></h3>
 <p>Store the gzip log blob in MongoDB after the command finishes.</p>
 <p>Requires <code class="docutils literal notranslate"><span class="pre">MONGODB_URI</span></code> environment variable.</p>
+</section>
+<section id="force-gridfs">
+<h3><code class="docutils literal notranslate"><span class="pre">--force-gridfs</span></code><a class="headerlink" href="#force-gridfs" title="Link to this heading">¶</a></h3>
+<p>Upload the gzip blob via GridFS even when it fits in a BSON document.</p>
+<p>Has no effect unless <code class="docutils literal notranslate"><span class="pre">--use-mongodb</span></code> is also set. Blobs larger than 15 MiB
+already use GridFS automatically.</p>
 </section>
 <section id="no-timestamp">
 <h3><code class="docutils literal notranslate"><span class="pre">--no-timestamp</span></code><a class="headerlink" href="#no-timestamp" title="Link to this heading">¶</a></h3>
