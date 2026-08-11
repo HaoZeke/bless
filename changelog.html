@@ -247,6 +247,8 @@ data-aria-dark="Switch to auto color mode">
 <section id="bugfixes">
 <h4>Bugfixes<a class="headerlink" href="#bugfixes" title="Link to this heading">¶</a></h4>
 <ul class="simple">
+<li><p>Close the remote session if logger, persist, or run fails after <code class="docutils literal notranslate"><span class="pre">--remote</span></code> connect</p></li>
+<li><p>Close the remote session even if the final writeBatch fails</p></li>
 <li><p><code class="docutils literal notranslate"><span class="pre">--serve</span> <span class="pre">:port</span></code> binds <code class="docutils literal notranslate"><span class="pre">127.0.0.1</span></code>, not <code class="docutils literal notranslate"><span class="pre">0.0.0.0</span></code></p></li>
 <li><p>Sanitize session label/uuid; finish the gzip and evict the session on close</p></li>
 <li><p>Drop unused BlessError::CommandFailed; command failures are exit codes, not errors</p></li>
