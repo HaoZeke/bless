@@ -5,6 +5,7 @@
 
 #+begin_example
 bless [OPTIONS] -- COMMAND [ARGS...]
+bless --serve ADDR
 #+end_example
 
 * Options
@@ -95,19 +96,28 @@ Available when built with =--features serve=.
 
 ** =--serve <ADDR>=
 
-Start in server mode, listening for capnp RPC connections.
+Start in server mode, listening for capnp RPC connections. No wrapped
+command is required. Conflicts with =--remote= and =--use-mongodb=.
+
+=:port= binds =127.0.0.1:port= (not all interfaces). An explicit host is
+unchanged.
 
 Example: =--serve :5678=
 
 ** =--remote <ADDR>=
 
-Stream logs to a remote bless server instead of (or in addition to) local files.
+Stream logs to a remote bless server. The wrapped command is still
+required. =:port= connects to =127.0.0.1:port=.
+
+Without =--local= and without =-o=, no local gzip is written. An
+explicit =-o= still writes that path.
 
 Example: =--remote :5678=
 
 ** =--local=
 
-When used with =--remote=, also write a local gzip file.
+Requires =--remote=. Also write a local gzip file (default
+={label}_{uuid}.log.gz= unless =-o= is set).
 
 * Exit codes
 

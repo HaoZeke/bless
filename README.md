@@ -117,23 +117,30 @@ bless --label run --split -- ./simulation
 
 When built with `--features serve`, two additional flags are available.
 
-Start a log aggregation server (capnp RPC):
+Start a log aggregation server (capnp RPC). `:port` binds `127.0.0.1:port`
+(not all interfaces). No dummy command is required:
 
 ```bash
-bless --serve :9000 -- true
+bless --serve :9000
 ```
 
-Stream logs from a run to a remote bless server:
+Stream logs from a run to a remote bless server. `:port` connects to
+`127.0.0.1:port`:
 
 ```bash
-bless --remote 192.168.1.10:9000 --label worker1 -- ./job.sh
+bless --remote :9000 --label worker1 -- ./job.sh
 ```
+
+An explicit host is unchanged (`--remote 192.168.1.10:9000`), and the
+server must be started on that address (`--serve 192.168.1.10:9000`).
 
 Add `--local` to also write a local gzip alongside remote streaming:
 
 ```bash
-bless --remote 192.168.1.10:9000 --local --label worker1 -- ./job.sh
+bless --remote :9000 --local --label worker1 -- ./job.sh
 ```
+
+Without `--local` (and without `-o`), `--remote` writes no local gzip.
 
 Session data is stored under `$XDG_DATA_HOME/bless/sessions/` (or
 `$HOME/.local/share/bless/sessions/`).
