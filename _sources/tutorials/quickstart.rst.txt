@@ -51,6 +51,13 @@ Run a command
 
 This creates ``myproject_{uuid}.log.gz`` in the current directory.
 
+List and inspect that run without wrapping another command:
+
+.. code:: bash
+
+    bless ls
+    bless show <uuid-or-prefix>
+
 Read the log
 ------------
 

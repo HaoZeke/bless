@@ -258,6 +258,15 @@ non-unique index.</p>
 </section>
 <section id="querying-stored-runs">
 <h2>Querying stored runs<a class="headerlink" href="#querying-stored-runs" title="Link to this heading">¶</a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span data-line="1"><span class="nv">MONGODB_URI</span><span class="o">=</span><span class="s2">&quot;mongodb://localhost:27017/&quot;</span><span class="w"> </span>bless<span class="w"> </span>ls<span class="w"> </span>--use-mongodb
+</span><span data-line="2"><span class="nv">MONGODB_URI</span><span class="o">=</span><span class="s2">&quot;mongodb://localhost:27017/&quot;</span><span class="w"> </span>bless<span class="w"> </span>show<span class="w"> </span>&lt;uuid-or-prefix&gt;<span class="w"> </span>--use-mongodb
+</span><span data-line="3"><span class="nv">MONGODB_URI</span><span class="o">=</span><span class="s2">&quot;mongodb://localhost:27017/&quot;</span><span class="w"> </span>bless<span class="w"> </span>fetch<span class="w"> </span>&lt;uuid-or-prefix&gt;<span class="w"> </span>--use-mongodb<span class="w"> </span>-o<span class="w"> </span>run.log.gz
+</span></pre></div>
+</div>
+<p><code class="docutils literal notranslate"><span class="pre">ls</span></code> prints <code class="docutils literal notranslate"><span class="pre">run_uuid</span></code>, <code class="docutils literal notranslate"><span class="pre">label</span></code>, <code class="docutils literal notranslate"><span class="pre">stream</span></code>, <code class="docutils literal notranslate"><span class="pre">storage</span></code>, <code class="docutils literal notranslate"><span class="pre">size_bytes</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">start_time</span></code>. <code class="docutils literal notranslate"><span class="pre">fetch</span></code> writes the embedded <code class="docutils literal notranslate"><span class="pre">gzip_blob</span></code> or streams the
+GridFS object; it does not call <code class="docutils literal notranslate"><span class="pre">scripts/get_db_gzip.py</span></code>.</p>
+<p>Inspect with <code class="docutils literal notranslate"><span class="pre">mongosh</span></code> as well:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span data-line="1">mongosh<span class="w"> </span>--eval<span class="w"> </span><span class="s1">&#39;db.getSiblingDB(&quot;bless&quot;).commands.find({label: &quot;nightly-build&quot;}).sort({start_time: -1}).limit(5)&#39;</span>
 </span></pre></div>
 </div>

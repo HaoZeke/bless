@@ -115,6 +115,12 @@ data-aria-dark="Switch to auto color mode">
 <li><a class="reference internal" href="#version"><code class="docutils literal notranslate"><span class="pre">--version</span></code></a></li>
 </ul>
 </li>
+<li><a class="reference internal" href="#query-subcommands">Query subcommands</a><ul>
+<li><a class="reference internal" href="#ls"><code class="docutils literal notranslate"><span class="pre">ls</span></code></a></li>
+<li><a class="reference internal" href="#show-id"><code class="docutils literal notranslate"><span class="pre">show</span> <span class="pre">&lt;id&gt;</span></code></a></li>
+<li><a class="reference internal" href="#fetch-id"><code class="docutils literal notranslate"><span class="pre">fetch</span> <span class="pre">&lt;id&gt;</span></code></a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#mongodb-options">MongoDB options</a><ul>
 <li><a class="reference internal" href="#use-mongodb"><code class="docutils literal notranslate"><span class="pre">--use-mongodb</span></code></a></li>
 <li><a class="reference internal" href="#db-name"><code class="docutils literal notranslate"><span class="pre">--db</span> <span class="pre">&lt;NAME&gt;</span></code></a></li>
@@ -230,6 +236,9 @@ data-aria-dark="Switch to auto color mode">
 <h2>Synopsis<a class="headerlink" href="#synopsis" title="Link to this heading">¶</a></h2>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span data-line="1"><span class="n">bless</span> <span class="p">[</span><span class="n">OPTIONS</span><span class="p">]</span> <span class="o">--</span> <span class="n">COMMAND</span> <span class="p">[</span><span class="n">ARGS</span><span class="o">...</span><span class="p">]</span>
 </span><span data-line="2"><span class="n">bless</span> <span class="o">--</span><span class="n">serve</span> <span class="n">ADDR</span>
+</span><span data-line="3"><span class="n">bless</span> <span class="n">ls</span>
+</span><span data-line="4"><span class="n">bless</span> <span class="n">show</span> <span class="o">&lt;</span><span class="nb">id</span><span class="o">&gt;</span>
+</span><span data-line="5"><span class="n">bless</span> <span class="n">fetch</span> <span class="o">&lt;</span><span class="nb">id</span><span class="o">&gt;</span> <span class="p">[</span><span class="o">-</span><span class="n">o</span> <span class="n">PATH</span><span class="p">]</span>
 </span></pre></div>
 </div>
 </section>
@@ -281,6 +290,43 @@ clean lines.</p>
 <section id="version">
 <h3><code class="docutils literal notranslate"><span class="pre">--version</span></code><a class="headerlink" href="#version" title="Link to this heading">¶</a></h3>
 <p>Print version and exit.</p>
+</section>
+</section>
+<section id="query-subcommands">
+<h2>Query subcommands<a class="headerlink" href="#query-subcommands" title="Link to this heading">¶</a></h2>
+<p>These inspect existing runs. They do not require <code class="docutils literal notranslate"><span class="pre">--</span></code> or a wrapped
+command. <code class="docutils literal notranslate"><span class="pre">&lt;id&gt;</span></code> is a full <code class="docutils literal notranslate"><span class="pre">run_uuid</span></code> or a unique prefix. If the prefix
+matches more than one uuid, the command exits with an error.</p>
+<section id="ls">
+<h3><code class="docutils literal notranslate"><span class="pre">ls</span></code><a class="headerlink" href="#ls" title="Link to this heading">¶</a></h3>
+<p>List gzip files in the current directory whose names look like
+<code class="docutils literal notranslate"><span class="pre">{label}_{uuid}.log.gz</span></code> or the split pair
+<code class="docutils literal notranslate"><span class="pre">{label}_{uuid}_stdout.log.gz</span></code> / <code class="docutils literal notranslate"><span class="pre">{label}_{uuid}_stderr.log.gz</span></code>.</p>
+<p>Prints <code class="docutils literal notranslate"><span class="pre">uuid</span></code>, <code class="docutils literal notranslate"><span class="pre">label</span></code>, <code class="docutils literal notranslate"><span class="pre">stream</span></code> (or <code class="docutils literal notranslate"><span class="pre">-</span></code>), <code class="docutils literal notranslate"><span class="pre">path</span></code>, and <code class="docutils literal notranslate"><span class="pre">size</span></code>.</p>
+<p>With <code class="docutils literal notranslate"><span class="pre">--use-mongodb</span></code> (requires <code class="docutils literal notranslate"><span class="pre">--features</span> <span class="pre">mongodb</span></code>), lists documents
+in <code class="docutils literal notranslate"><span class="pre">bless.commands</span></code> (or <code class="docutils literal notranslate"><span class="pre">--db</span></code> / <code class="docutils literal notranslate"><span class="pre">--collection</span></code>) and prints
+<code class="docutils literal notranslate"><span class="pre">run_uuid</span></code>, <code class="docutils literal notranslate"><span class="pre">label</span></code>, <code class="docutils literal notranslate"><span class="pre">stream</span></code>, <code class="docutils literal notranslate"><span class="pre">storage</span></code>, <code class="docutils literal notranslate"><span class="pre">size_bytes</span></code>, and
+<code class="docutils literal notranslate"><span class="pre">start_time</span></code>.</p>
+</section>
+<section id="show-id">
+<h3><code class="docutils literal notranslate"><span class="pre">show</span> <span class="pre">&lt;id&gt;</span></code><a class="headerlink" href="#show-id" title="Link to this heading">¶</a></h3>
+<p>Print the <code class="docutils literal notranslate"><span class="pre">ls</span></code> fields for matching files, plus the file mtime. Mongo
+<code class="docutils literal notranslate"><span class="pre">show</span></code> prints the Mongo <code class="docutils literal notranslate"><span class="pre">ls</span></code> columns for the matching documents.</p>
+</section>
+<section id="fetch-id">
+<h3><code class="docutils literal notranslate"><span class="pre">fetch</span> <span class="pre">&lt;id&gt;</span></code><a class="headerlink" href="#fetch-id" title="Link to this heading">¶</a></h3>
+<p>Copy the matching gzip.</p>
+<ul class="simple">
+<li><p>Default destination: <code class="docutils literal notranslate"><span class="pre">{uuid}.log.gz</span></code></p></li>
+<li><p>Split run (two matches): <code class="docutils literal notranslate"><span class="pre">{uuid}_stdout.log.gz</span></code> and
+<code class="docutils literal notranslate"><span class="pre">{uuid}_stderr.log.gz</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-o</span> <span class="pre">PATH</span></code>: write that single file; error if the id matches two
+streams</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">-o</span> <span class="pre">-</span></code>: write gzip bytes to stdout; error if the id matches two
+streams</p></li>
+</ul>
+<p>With <code class="docutils literal notranslate"><span class="pre">--use-mongodb</span></code>, downloads the stored <code class="docutils literal notranslate"><span class="pre">gzip_blob</span></code> or streams the
+GridFS object named by <code class="docutils literal notranslate"><span class="pre">gzip_blob_id</span></code>. Requires <code class="docutils literal notranslate"><span class="pre">MONGODB_URI</span></code>.</p>
 </section>
 </section>
 <section id="mongodb-options">
