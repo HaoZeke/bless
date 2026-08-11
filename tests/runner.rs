@@ -21,13 +21,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_grandchild_holding_pipe_does_not_hang() {
-        let fut = run_command(
-            "bash",
-            &[
-                "-c".into(),
-                "sleep 10 & echo done".into(),
-            ],
-        );
+        let args = ["-c".into(), "sleep 10 & echo done".into()];
+        let fut = run_command("bash", &args);
         let result = tokio::time::timeout(std::time::Duration::from_secs(5), fut).await;
         assert!(
             result.is_ok(),
