@@ -238,6 +238,9 @@ data-aria-dark="Switch to auto color mode">
 <section id="bugfixes">
 <h4>Bugfixes<a class="headerlink" href="#bugfixes" title="Link to this heading">¶</a></h4>
 <ul class="simple">
+<li><p>Drop unused BlessError::CommandFailed; command failures are exit codes, not errors</p></li>
+<li><p>Print a bless error’s source when Display does not already include it</p></li>
+<li><p>Recover gzip log and flush from a poisoned encoder mutex instead of panicking</p></li>
 <li><p>Stream GridFS uploads from disk instead of buffering the gzip in memory</p></li>
 <li><p>Split gzip names insert <code class="docutils literal notranslate"><span class="pre">_stdout</span></code>/<code class="docutils literal notranslate"><span class="pre">_stderr</span></code> before the extension so <code class="docutils literal notranslate"><span class="pre">-o</span> <span class="pre">build_log.gz</span></code> no longer collapses both streams</p></li>
 <li><p>Stdout gzip keeps Info and Trace only; Warn and Error go to the stderr gzip</p></li>
