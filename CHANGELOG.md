@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file. See [conven
 - - -
 ## Unreleased
 #### Bugfixes
+- Drop unused BlessError::CommandFailed; command failures are exit codes, not errors
+- Print a bless error's source when Display does not already include it
+- Recover gzip log and flush from a poisoned encoder mutex instead of panicking
 - Stream GridFS uploads from disk instead of buffering the gzip in memory
 - Split gzip names insert `_stdout`/`_stderr` before the extension so `-o build_log.gz` no longer collapses both streams
 - Stdout gzip keeps Info and Trace only; Warn and Error go to the stderr gzip

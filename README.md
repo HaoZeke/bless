@@ -20,8 +20,8 @@ Snakemake to store metadata more generically.
 `bless` uses `tokio::process` for async subprocess execution with concurrent
 stdout/stderr streaming. The wrapped command's exit code is passed through via
 `ExitCode`, so scripts and CI can inspect the real status. All errors are
-represented as `BlessError` (via `thiserror`), covering I/O, MongoDB, logger
-init, and command failure variants.
+represented as `BlessError` (via `thiserror`), covering I/O, MongoDB, and
+logger init.
 
 ### Log levels
 
