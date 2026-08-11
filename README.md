@@ -148,7 +148,8 @@ MONGODB_URI="mongodb://localhost:27017/" bless --use-mongodb --label experiment 
 
 The gzip file the logger opened (not a reconstructed name), plus command
 args, label, uuid, timestamps, and duration, are saved to the `commands`
-collection in the `local` database. `--use-mongodb` with `-o -` is an
+collection in the `bless` database. Override with `--db` / `--collection`
+or `MONGODB_DB` / `MONGODB_COLLECTION`. `--use-mongodb` with `-o -` is an
 error: there is no gzip to upload. `--split` writes two documents that
 share `run_uuid` and set `stream` to `stdout` or `stderr`.
 
@@ -163,7 +164,7 @@ Inspect results with `npx mongosh`:
 
 ```bash
 npx mongosh
-use local
+use bless
 # Show all entries
 db.commands.find()
 # Suppress blob data
@@ -179,7 +180,7 @@ A helper script writes the stored gzip to a file. Documents with
 embedded `gzip_blob` Binary is used:
 
 ```bash
-python scripts/get_db_gzip.py --db-name local --collection-name commands --query-field args --query-value orca.inp
+python scripts/get_db_gzip.py --db-name bless --collection-name commands --query-field args --query-value orca.inp
 ```
 
 # Documentation

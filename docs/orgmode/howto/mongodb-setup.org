@@ -25,7 +25,10 @@ This:
 1. Runs the command with logging as usual
 2. Connects to MongoDB
 3. Stores each gzip the logger opened, plus metadata, in the
-   =local.commands= collection
+   =bless.commands= collection
+
+Override the destination with =--db= / =--collection= or
+=MONGODB_DB= / =MONGODB_COLLECTION=.
 
 Persist uploads the gzip files the logger opened, not a reconstructed
 ={label}_{uuid}.log.gz= name. =--use-mongodb= with =-o -= is a config
@@ -58,7 +61,7 @@ and =gzip_blob_id= instead of the bytes.
 
 #+begin_src bash
 python scripts/get_db_gzip.py \
-  --db-name local \
+  --db-name bless \
   --collection-name commands \
   --query-field label \
   --query-value nightly-build \
