@@ -1,13 +1,15 @@
-use crate::bless_log_capnp::{bless_server, log_sink};
+use crate::bless_log_capnp::{bless_server, log_line, log_sink};
 use capnp::capability::Promise;
 use capnp_rpc::pry;
 use flate2::write::GzEncoder;
 use flate2::Compression;
+use log::Level;
 use std::collections::HashMap;
 use std::fs::{self, File};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 /// Helper to extract capnp text fields, converting Utf8Error to capnp::Error.
 fn text(r: Result<&str, std::str::Utf8Error>) -> Result<String, capnp::Error> {
@@ -23,9 +25,82 @@ struct SessionState {
     line_count: u64,
 }
 
+/// Fields listSessions exposes. Live sessions leave duration empty and
+/// exit_code at 0; close fills both and moves the row to `completed`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct SessionSummaryData {
+    uuid: String,
+    label: String,
+    command: String,
+    duration: String,
+    line_count: u64,
+    exit_code: i32,
+}
+
+impl SessionState {
+    fn live_summary(&self) -> SessionSummaryData {
+        SessionSummaryData {
+            uuid: self.uuid.clone(),
+            label: self.label.clone(),
+            command: self.command.clone(),
+            duration: String::new(),
+            line_count: self.line_count,
+            exit_code: 0,
+        }
+    }
+}
+
+/// Live sessions first, then completed, truncated to `limit`.
+fn collect_session_summaries(
+    live: impl IntoIterator<Item = SessionSummaryData>,
+    completed: impl IntoIterator<Item = SessionSummaryData>,
+    limit: usize,
+) -> Vec<SessionSummaryData> {
+    live.into_iter().chain(completed).take(limit).collect()
+}
+
+/// Convert `LogLine.timestamp` (unix seconds) via [`SystemTime`] when the
+/// value is finite; otherwise use now so the archive never writes NaN/Inf.
+fn system_time_from_unix_secs(timestamp: f64) -> SystemTime {
+    if !timestamp.is_finite() {
+        return SystemTime::now();
+    }
+    let Ok(dur) = Duration::try_from_secs_f64(timestamp.abs()) else {
+        return SystemTime::now();
+    };
+    if timestamp >= 0.0 {
+        UNIX_EPOCH.checked_add(dur).unwrap_or_else(SystemTime::now)
+    } else {
+        UNIX_EPOCH.checked_sub(dur).unwrap_or_else(SystemTime::now)
+    }
+}
+
+fn capnp_level_display(level: Result<log_line::Level, capnp::NotInSchema>) -> &'static str {
+    match level {
+        Ok(log_line::Level::Trace) => Level::Trace.as_str(),
+        Ok(log_line::Level::Debug) => Level::Debug.as_str(),
+        Ok(log_line::Level::Info) => Level::Info.as_str(),
+        Ok(log_line::Level::Warn) => Level::Warn.as_str(),
+        Ok(log_line::Level::Error) => Level::Error.as_str(),
+        Err(_) => "UNKNOWN",
+    }
+}
+
+/// One gzip archive line, same shape as GzipLogWrapper:
+/// `[rfc3339_seconds LEVEL] message`.
+fn format_session_log_line(timestamp: f64, level: &str, message: &str) -> String {
+    format!(
+        "[{} {}] {}",
+        humantime::format_rfc3339_seconds(system_time_from_unix_secs(timestamp)),
+        level,
+        message
+    )
+}
+
 #[derive(Clone)]
 pub struct BlessServerImpl {
     sessions: Arc<Mutex<HashMap<String, Arc<Mutex<SessionState>>>>>,
+    completed: Arc<Mutex<Vec<SessionSummaryData>>>,
     data_dir: PathBuf,
 }
 
@@ -34,6 +109,7 @@ impl BlessServerImpl {
         fs::create_dir_all(&data_dir).expect("failed to create data directory");
         Self {
             sessions: Arc::new(Mutex::new(HashMap::new())),
+            completed: Arc::new(Mutex::new(Vec::new())),
             data_dir,
         }
     }
@@ -81,6 +157,7 @@ impl bless_server::Server for BlessServerImpl {
         let sink = LogSinkImpl {
             state,
             sessions: Arc::clone(&self.sessions),
+            completed: Arc::clone(&self.completed),
             data_dir: self.data_dir.clone(),
         };
         results.get().set_sink(capnp_rpc::new_client(sink));
@@ -96,17 +173,28 @@ impl bless_server::Server for BlessServerImpl {
     ) -> Promise<(), capnp::Error> {
         let limit = pry!(params.get()).get_limit() as usize;
         let sessions = self.sessions.lock().expect("sessions mutex poisoned");
+        let completed = self.completed.lock().expect("completed mutex poisoned");
 
-        let entries: Vec<_> = sessions.values().take(limit).collect();
-        let mut list = results.get().init_sessions(entries.len() as u32);
+        let summaries = collect_session_summaries(
+            sessions.values().map(|session_arc| {
+                session_arc
+                    .lock()
+                    .expect("session mutex poisoned")
+                    .live_summary()
+            }),
+            completed.iter().cloned(),
+            limit,
+        );
 
-        for (i, session_arc) in entries.iter().enumerate() {
-            let session = session_arc.lock().expect("session mutex poisoned");
+        let mut list = results.get().init_sessions(summaries.len() as u32);
+        for (i, summary) in summaries.iter().enumerate() {
             let mut entry = list.reborrow().get(i as u32);
-            entry.set_uuid(&session.uuid);
-            entry.set_label(&session.label);
-            entry.set_command(&session.command);
-            entry.set_line_count(session.line_count);
+            entry.set_uuid(&summary.uuid);
+            entry.set_label(&summary.label);
+            entry.set_command(&summary.command);
+            entry.set_duration(&summary.duration);
+            entry.set_line_count(summary.line_count);
+            entry.set_exit_code(summary.exit_code);
         }
 
         Promise::ok(())
@@ -116,6 +204,7 @@ impl bless_server::Server for BlessServerImpl {
 struct LogSinkImpl {
     state: Arc<Mutex<SessionState>>,
     sessions: Arc<Mutex<HashMap<String, Arc<Mutex<SessionState>>>>>,
+    completed: Arc<Mutex<Vec<SessionSummaryData>>>,
     data_dir: PathBuf,
 }
 
@@ -130,17 +219,15 @@ impl log_sink::Server for LogSinkImpl {
 
         for line in lines.iter() {
             let ts = line.get_timestamp();
-            let level = match line.get_level() {
-                Ok(l) => format!("{:?}", l),
-                Err(_) => "UNKNOWN".to_string(),
-            };
+            let level = capnp_level_display(line.get_level());
             let msg = line
                 .get_message()
                 .ok()
                 .and_then(|r| r.to_str().ok())
                 .unwrap_or("");
 
-            let _ = writeln!(state.encoder, "[{:.3} {}] {}", ts, level, msg);
+            let formatted = format_session_log_line(ts, level, msg);
+            let _ = writeln!(state.encoder, "{formatted}");
             state.line_count += 1;
         }
 
@@ -182,6 +269,18 @@ impl log_sink::Server for LogSinkImpl {
             .lock()
             .expect("sessions mutex poisoned")
             .remove(&uuid);
+
+        self.completed
+            .lock()
+            .expect("completed mutex poisoned")
+            .push(SessionSummaryData {
+                uuid: uuid.clone(),
+                label: label.clone(),
+                command: command.clone(),
+                duration: duration.clone(),
+                line_count,
+                exit_code,
+            });
 
         eprintln!(
             "[serve] session closed: {label} ({uuid}) exit={exit_code} lines={line_count} duration={duration}"
@@ -318,5 +417,141 @@ mod tests {
         let dir = tempfile::tempdir().unwrap();
         assert!(session_log_path(dir.path(), "../etc", "u1").is_err());
         assert!(session_log_path(dir.path(), "lab", "/tmp/x").is_err());
+    }
+
+    #[test]
+    fn formats_unix_timestamp_as_rfc3339_display_level_line() {
+        let line = format_session_log_line(0.0, Level::Info.as_str(), "hello");
+        assert_eq!(line, "[1970-01-01T00:00:00Z INFO] hello");
+
+        let line = format_session_log_line(1_000_000_000.9, Level::Warn.as_str(), "tick");
+        assert_eq!(line, "[2001-09-09T01:46:40Z WARN] tick");
+    }
+
+    #[test]
+    fn capnp_levels_map_to_log_display() {
+        assert_eq!(capnp_level_display(Ok(log_line::Level::Trace)), "TRACE");
+        assert_eq!(capnp_level_display(Ok(log_line::Level::Debug)), "DEBUG");
+        assert_eq!(capnp_level_display(Ok(log_line::Level::Info)), "INFO");
+        assert_eq!(capnp_level_display(Ok(log_line::Level::Warn)), "WARN");
+        assert_eq!(capnp_level_display(Ok(log_line::Level::Error)), "ERROR");
+        assert_ne!(
+            format!("{:?}", log_line::Level::Info),
+            capnp_level_display(Ok(log_line::Level::Info))
+        );
+    }
+
+    #[test]
+    fn formats_all_levels_via_log_display_not_debug() {
+        for (level, expected) in [
+            (Level::Trace, "TRACE"),
+            (Level::Debug, "DEBUG"),
+            (Level::Info, "INFO"),
+            (Level::Warn, "WARN"),
+            (Level::Error, "ERROR"),
+        ] {
+            let line = format_session_log_line(0.0, level.as_str(), "m");
+            assert_eq!(line, format!("[1970-01-01T00:00:00Z {expected}] m"));
+            assert!(
+                !line.contains(&format!("{:?}", level)),
+                "must not use Debug Level: {line}"
+            );
+        }
+    }
+
+    #[test]
+    fn non_finite_timestamp_uses_now_not_unix_float() {
+        for ts in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            let line = format_session_log_line(ts, Level::Info.as_str(), "x");
+            assert!(
+                !line.contains("NaN") && !line.contains("inf") && !line.contains("Inf"),
+                "non-finite ts leaked: {line}"
+            );
+            let rest = line
+                .strip_prefix('[')
+                .and_then(|s| s.split_once("] "))
+                .expect("expected [timestamp LEVEL] msg");
+            let (inside, msg) = rest;
+            let mut parts = inside.split_whitespace();
+            let stamp = parts.next().expect("timestamp");
+            let level = parts.next().expect("LEVEL");
+            assert!(parts.next().is_none(), "extra fields: {inside}");
+            assert!(stamp.contains('T'), "rfc3339 timestamp: {stamp}");
+            assert_eq!(level, "INFO");
+            assert_eq!(msg, "x");
+        }
+    }
+
+    fn summary(
+        uuid: &str,
+        label: &str,
+        command: &str,
+        duration: &str,
+        line_count: u64,
+        exit_code: i32,
+    ) -> SessionSummaryData {
+        SessionSummaryData {
+            uuid: uuid.into(),
+            label: label.into(),
+            command: command.into(),
+            duration: duration.into(),
+            line_count,
+            exit_code,
+        }
+    }
+
+    #[test]
+    fn list_summaries_sets_all_session_summary_fields() {
+        let live = [summary("live-u", "live-lab", "echo", "", 3, 0)];
+        let done = [summary("done-u", "done-lab", "false", "1.2s", 7, 1)];
+        let rows = collect_session_summaries(live, done, 10);
+        assert_eq!(rows.len(), 2);
+
+        assert_eq!(rows[0].uuid, "live-u");
+        assert_eq!(rows[0].label, "live-lab");
+        assert_eq!(rows[0].command, "echo");
+        assert_eq!(rows[0].duration, "");
+        assert_eq!(rows[0].line_count, 3);
+        assert_eq!(rows[0].exit_code, 0);
+
+        assert_eq!(rows[1].uuid, "done-u");
+        assert_eq!(rows[1].label, "done-lab");
+        assert_eq!(rows[1].command, "false");
+        assert_eq!(rows[1].duration, "1.2s");
+        assert_eq!(rows[1].line_count, 7);
+        assert_eq!(rows[1].exit_code, 1);
+    }
+
+    #[test]
+    fn list_summaries_live_first_then_completed_respects_limit() {
+        let live = [
+            summary("a", "la", "cmd-a", "", 1, 0),
+            summary("b", "lb", "cmd-b", "", 2, 0),
+        ];
+        let done = [
+            summary("c", "lc", "cmd-c", "10ms", 3, 0),
+            summary("d", "ld", "cmd-d", "20ms", 4, 2),
+        ];
+
+        let all = collect_session_summaries(live.clone(), done.clone(), 10);
+        assert_eq!(
+            all.iter().map(|s| s.uuid.as_str()).collect::<Vec<_>>(),
+            ["a", "b", "c", "d"]
+        );
+
+        let limited = collect_session_summaries(live, done, 3);
+        assert_eq!(
+            limited.iter().map(|s| s.uuid.as_str()).collect::<Vec<_>>(),
+            ["a", "b", "c"]
+        );
+        assert_eq!(limited[2].duration, "10ms");
+        assert_eq!(limited[2].exit_code, 0);
+
+        let empty = collect_session_summaries(
+            std::iter::empty::<SessionSummaryData>(),
+            std::iter::empty(),
+            5,
+        );
+        assert!(empty.is_empty());
     }
 }
