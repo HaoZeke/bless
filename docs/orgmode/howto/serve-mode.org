@@ -24,7 +24,9 @@ bless --serve :5678
 address such as =0.0.0.0:5678= or =192.168.1.10:5678= to listen elsewhere.
 No dummy command is required.
 
-The server stores sessions in =~/.local/share/bless/sessions/=.
+Session data is stored under =$XDG_DATA_HOME/bless/sessions/= (or
+=$HOME/.local/share/bless/sessions/=). If neither variable is set, the
+server uses =.bless_sessions= in the working directory.
 
 * Stream from a client
 
@@ -43,10 +45,9 @@ bless --remote :5678 --local --label ci-build -- make test
 
 * Session files
 
-Each session produces:
-
-- ={label}_{uuid}.log.gz= -- compressed log with timestamps
-- =index.json= -- append-only JSONL with session metadata
+Each session writes ={label}_{uuid}.log.gz= under the data directory.
+The server appends one JSON object per closed session to a shared
+=index.json= in that directory.
 
 * Architecture
 
@@ -56,7 +57,7 @@ client                     server
   |-- openSession(meta) ---->|
   |<---- LogSink capability -|
   |                          |
-  |-- writeBatch(lines) ---->|  (batched, every 64 lines or 100ms)
+  |-- writeBatch(lines) ---->|  (flushed every 100ms)
   |-- writeBatch(lines) ---->|
   |                          |
   |-- close(exit, dur) ----->|  (finalizes gzip, writes index)
