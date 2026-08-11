@@ -161,10 +161,7 @@ pub fn setup_logger(config: &LoggerConfig) -> Result<LoggerHandles, BlessError> 
     setup_logger_with_extra(config, None)
 }
 
-fn apply_dispatch(
-    dispatch: fern::Dispatch,
-    extra: Option<Box<dyn Log>>,
-) -> Result<(), BlessError> {
+fn apply_dispatch(dispatch: fern::Dispatch, extra: Option<Box<dyn Log>>) -> Result<(), BlessError> {
     let dispatch = if let Some(extra) = extra {
         dispatch.chain(
             fern::Dispatch::new()

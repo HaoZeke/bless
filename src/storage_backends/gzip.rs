@@ -118,7 +118,10 @@ mod tests {
         let mut parts = inside.split_whitespace();
         let ts = parts.next().expect("timestamp");
         let level = parts.next().expect("LEVEL");
-        assert!(parts.next().is_none(), "extra fields inside brackets: {inside}");
+        assert!(
+            parts.next().is_none(),
+            "extra fields inside brackets: {inside}"
+        );
         assert!(ts.contains('T'), "rfc3339 timestamp: {ts}");
         assert_eq!(level, "INFO");
         assert_eq!(msg, "hello-gzip");
