@@ -101,8 +101,11 @@ Store run output and metadata in MongoDB:
 #+begin_src bash
 MONGODB_URI="mongodb://localhost:27017/" bless --use-mongodb --label experiment -- ./run.sh
 #+end_src
-The gzip blob, command args, label, uuid, timestamps, and duration are saved to
-the ~commands~ collection in the ~local~ database.
+The gzip file the logger opened (not a reconstructed name), plus command
+args, label, uuid, timestamps, and duration, are saved to the ~commands~
+collection in the ~local~ database. ~--use-mongodb~ with ~-o -~ is an
+error: there is no gzip to upload. ~--split~ writes two documents that
+share ~run_uuid~ and set ~stream~ to ~stdout~ or ~stderr~.
 
 Assuming ~pixi~ is used to get an instance of ~mongod~:
 #+begin_src bash
